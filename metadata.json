@@ -1,0 +1,6 @@
+{
+  "name": "Asset Tracker",
+  "description": "A minimalist personal asset tracking dashboard with a modern glassmorphic interface for tracking savings, deposits, and mutual funds.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
