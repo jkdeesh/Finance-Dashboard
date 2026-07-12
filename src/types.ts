@@ -1,14 +1,16 @@
 export interface BankAccount {
   id: string;
   bankName: string;
-  accountType: string; // e.g. "Savings", "Checking", "High-Yield"
+  accountType: string;
   accountNumber: string;
   balance: number;
-  interestRate: number; // APY as percentage, e.g. 4.25
+  interestRate: number;
+  currency?: CurrencyCode;
   notes?: string;
-  currency?: CurrencyCode; // Currency per account
-  ownerId?: string;
+  ownerIds: string[]; // Change from ownerId: string
 }
+
+// ... Do the same for FixedDeposit and MutualFund interfaces ...
 
 export interface FixedDeposit {
   id: string;

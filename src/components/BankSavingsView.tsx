@@ -164,6 +164,9 @@ export const BankSavingsView: React.FC<BankSavingsViewProps> = ({
       interestRate: Number(interestRate),
       currency: accountCurrency,
       notes: notes.trim() || undefined,
+      ownerIds: editingId 
+        ? accounts.find(a => a.id === editingId)?.ownerIds || [] 
+        : ['Username'] // Replace 'jagadeesh' with your logic for the default owner
     };
 
     if (editingId) {

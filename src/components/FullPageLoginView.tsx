@@ -161,7 +161,7 @@ export const FullPageLoginView: React.FC<FullPageLoginViewProps> = ({
                   <input
                     type="text"
                     required
-                    placeholder="Jagadeesh"
+                    placeholder="Username"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="w-full bg-white/55 dark:bg-slate-850/50 text-slate-900 dark:text-slate-100 border border-slate-200/60 dark:border-slate-800 rounded-xl pl-10 pr-3.5 py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all font-medium"
@@ -211,42 +211,56 @@ export const FullPageLoginView: React.FC<FullPageLoginViewProps> = ({
               </div>
             </div>
 
+            {/* Forgot Password Link */}
+            <div className="flex justify-end -mt-2 mb-4">
+              <button
+                type="button"
+                onClick={() => alert('Forgot password functionality coming soon!')}
+                className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 transition-colors"
+              >
+                Forgot password?
+              </button>
+            </div>
+
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 bg-indigo-650 hover:bg-indigo-600 disabled:bg-indigo-500/80 text-white font-extrabold rounded-xl text-xs transition-all cursor-pointer shadow-md hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 mt-2"
+              className={`w-full py-3 mt-2 text-white font-extrabold rounded-xl text-xs transition-all duration-300 cursor-pointer 
+                        ${authMode === 'signin' 
+                          ? 'bg-gradient-to-br from-indigo-600 to-indigo-500 shadow-[0_4px_12px_-2px_rgba(79,70,229,0.4)]' 
+                          : 'bg-gradient-to-br from-emerald-600 to-emerald-500 shadow-[0_4px_12px_-2px_rgba(16,185,129,0.4)]'
+                        }
+                        hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.3)] 
+                        hover:scale-[1.01] active:scale-[0.99] border border-white/10
+                        flex items-center justify-center gap-2`}
             >
               {isLoading ? (
-                <>
-                  <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                  <span>Authenticating...</span>
-                </>
+                <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
               ) : (
                 <>
                   <LogIn className="h-4 w-4" />
-                  <span>{authMode === 'signin' ? 'Sign In to Account' : 'Register Account'}</span>
+                  <span>{authMode === 'signin' ? 'Sign In to Account' : 'Register New Account'}</span>
                 </>
               )}
             </button>
           </form>
 
           {/* Divider */}
-          <div className="relative my-5">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-250 dark:border-slate-800" />
-            </div>
-            <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-wider">
-              <span className="bg-slate-100/10 dark:bg-slate-900/10 px-2.5 text-slate-500 dark:text-slate-400">
-                Quick Demo Access
-              </span>
-            </div>
+          <div className="relative my-5 flex items-center justify-center gap-3">
+            {/* Left Line */}
+            {/* <div className="flex-1 border-t border-slate-250 dark:border-slate-800" /> */}
+            
+            {/* Text */}
+            {/* <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 whitespace-nowrap">
+              Quick Demo Access
+            </span> */}
+            
+            {/* Right Line */}
+            {/* <div className="flex-1 border-t border-slate-250 dark:border-slate-800" /> */}
           </div>
 
           {/* One-click login button */}
-          <button
+          {/* <button
             type="button"
             onClick={handleDemoLogin}
             disabled={isLoading}
@@ -254,7 +268,7 @@ export const FullPageLoginView: React.FC<FullPageLoginViewProps> = ({
           >
             <RefreshCw className={`h-3.5 w-3.5 shrink-0 ${isLoading ? 'animate-spin' : ''}`} />
             <span>1-Click Demo Login (Jagadeesh)</span>
-          </button>
+          </button> */}
         </motion.div>
       </div>
     </div>

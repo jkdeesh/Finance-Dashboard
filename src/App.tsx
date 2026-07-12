@@ -56,6 +56,22 @@ const RupeeCoin = ({ className, ...props }: any) => {
   );
 };
 
+const getBankLogo = (bankName: string) => {
+  const mapping: Record<string, string> = {
+    'ICICI Bank': 'icicibank.com',
+    'HDFC Bank': 'hdfcbank.com',
+    'IDFC First Bank': 'idfcfirstbank.com',
+    'State Bank of India': 'sbi.co.in',
+    'Deutsche Bank': 'deutsche-bank.de',
+    'Deutsche Kreditbank Berlin': 'dkb.de'
+  };
+  
+  const domain = mapping[bankName] || 'bank.com';
+  return `https://img.logo.dev/${domain}?token=pk_your_token_here`; 
+  // Note: Replace with a public URL or a free provider like:
+  // return `https://logo.clearbit.com/${domain}`;
+};
+
 const LOCAL_STORAGE_KEY = 'asset_tracker_portfolio';
 
 const DEFAULT_USERS: UserProfile[] = [
@@ -84,7 +100,7 @@ const DEFAULT_ASSET_DATA: AssetData = {
       interestRate: 3.50,
       currency: 'INR',
       notes: 'Jagadeesh ICICI NRE',
-      ownerId: 'jagadeesh'
+      ownerIds: ['jagadeesh']
     },
     {
       id: 'sav-2',
@@ -95,7 +111,7 @@ const DEFAULT_ASSET_DATA: AssetData = {
       interestRate: 3.50,
       currency: 'INR',
       notes: 'Jagadeesh ICICI NRO',
-      ownerId: 'jagadeesh'
+      ownerIds: ['jagadeesh']
     },
     {
       id: 'sav-3',
@@ -106,7 +122,7 @@ const DEFAULT_ASSET_DATA: AssetData = {
       interestRate: 3.00,
       currency: 'INR',
       notes: 'Jagadeesh HDFC account',
-      ownerId: 'jagadeesh'
+      ownerIds: ['jagadeesh']
     },
     {
       id: 'sav-4',
@@ -117,7 +133,7 @@ const DEFAULT_ASSET_DATA: AssetData = {
       interestRate: 3.50,
       currency: 'INR',
       notes: 'Sreenithi ICICI account',
-      ownerId: 'sreenithi'
+      ownerIds: ['sreenithi']
     },
     {
       id: 'sav-5',
@@ -128,7 +144,29 @@ const DEFAULT_ASSET_DATA: AssetData = {
       interestRate: 4.50,
       currency: 'INR',
       notes: 'Sreenithi IDFC account',
-      ownerId: 'sreenithi'
+      ownerIds: ['sreenithi']
+    },
+    {
+      id: 'sav-db',
+      bankName: 'Deutsche Bank',
+      accountType: 'Savings Account',
+      accountNumber: '••••',
+      balance: 7000,
+      interestRate: 2.00,
+      currency: 'EUR',
+      notes: 'Deutsche Bank primary',
+      ownerIds: ['jagadeesh']
+    },
+    {
+      id: 'sav-dkb',
+      bankName: 'DKB',
+      accountType: 'Checking Account',
+      accountNumber: '••••',
+      balance: 25000,
+      interestRate: 1.50,
+      currency: 'EUR',
+      notes: 'DKB Cash',
+      ownerIds: ['jagadeesh', 'sreenithi']
     }
   ],
   fixedDeposits: [
@@ -142,7 +180,7 @@ const DEFAULT_ASSET_DATA: AssetData = {
       maturityDate: '2026-08-14',
       currency: 'INR',
       notes: 'Savings Category',
-      ownerId: 'jagadeesh'
+      ownerIds: ['jagadeesh']
     },
     {
       id: 'fd-2',
@@ -154,7 +192,7 @@ const DEFAULT_ASSET_DATA: AssetData = {
       maturityDate: '2027-09-30',
       currency: 'INR',
       notes: 'Savings Category',
-      ownerId: 'jagadeesh'
+      ownerIds: ['jagadeesh']
     },
     {
       id: 'fd-3',
@@ -166,7 +204,7 @@ const DEFAULT_ASSET_DATA: AssetData = {
       maturityDate: '2027-01-08',
       currency: 'INR',
       notes: 'Savings Category',
-      ownerId: 'jagadeesh'
+      ownerIds: ['jagadeesh']
     },
     {
       id: 'fd-4',
@@ -178,7 +216,7 @@ const DEFAULT_ASSET_DATA: AssetData = {
       maturityDate: '2027-04-25',
       currency: 'INR',
       notes: 'Savings Category',
-      ownerId: 'jagadeesh'
+      ownerIds: ['jagadeesh']
     },
     {
       id: 'fd-5',
@@ -190,7 +228,7 @@ const DEFAULT_ASSET_DATA: AssetData = {
       maturityDate: '2026-09-09',
       currency: 'INR',
       notes: 'Savings Category',
-      ownerId: 'sreenithi'
+      ownerIds: ['sreenithi']
     },
     {
       id: 'fd-6',
@@ -202,7 +240,7 @@ const DEFAULT_ASSET_DATA: AssetData = {
       maturityDate: '2027-04-30',
       currency: 'INR',
       notes: 'Savings Category',
-      ownerId: 'sreenithi'
+      ownerIds: ['sreenithi']
     },
     {
       id: 'fd-7',
@@ -214,7 +252,7 @@ const DEFAULT_ASSET_DATA: AssetData = {
       maturityDate: '2026-10-14',
       currency: 'INR',
       notes: 'Savings Category',
-      ownerId: 'sreenithi'
+      ownerIds: ['sreenithi']
     }
   ],
   mutualFunds: [
@@ -226,7 +264,7 @@ const DEFAULT_ASSET_DATA: AssetData = {
       averageNav: 106.00,
       currentNav: 187.07,
       currency: 'INR',
-      ownerId: 'jagadeesh'
+      ownerIds: ['jagadeesh']
     },
     {
       id: 'mf-2',
@@ -236,7 +274,7 @@ const DEFAULT_ASSET_DATA: AssetData = {
       averageNav: 51.00,
       currentNav: 51.38,
       currency: 'INR',
-      ownerId: 'jagadeesh'
+      ownerIds: ['jagadeesh']
     },
     {
       id: 'mf-3',
@@ -246,7 +284,7 @@ const DEFAULT_ASSET_DATA: AssetData = {
       averageNav: 68.00,
       currentNav: 73.97,
       currency: 'INR',
-      ownerId: 'jagadeesh'
+      ownerIds: ['jagadeesh']
     },
     {
       id: 'mf-4',
@@ -256,7 +294,7 @@ const DEFAULT_ASSET_DATA: AssetData = {
       averageNav: 50.00,
       currentNav: 54.87,
       currency: 'INR',
-      ownerId: 'jagadeesh'
+      ownerIds: ['jagadeesh']
     },
     {
       id: 'mf-5',
@@ -266,7 +304,7 @@ const DEFAULT_ASSET_DATA: AssetData = {
       averageNav: 50.00,
       currentNav: 62.91,
       currency: 'INR',
-      ownerId: 'jagadeesh'
+      ownerIds: ['jagadeesh']
     },
     {
       id: 'mf-6',
@@ -276,7 +314,7 @@ const DEFAULT_ASSET_DATA: AssetData = {
       averageNav: 100.00,
       currentNav: 109.37,
       currency: 'INR',
-      ownerId: 'jagadeesh'
+      ownerIds: ['jagadeesh']
     }
   ]
 };
@@ -296,16 +334,16 @@ export default function App() {
   const [selectedWallpaper, setSelectedWallpaper] = useState<string>(() => {
     try {
       const saved = localStorage.getItem('asset_tracker_wallpaper');
-      return saved || 'misty-forest';
+      return saved || 'coastal-sunset';
     } catch {
-      return 'misty-forest';
+      return 'coastal-sunset';
     }
   });
 
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     try {
       const saved = localStorage.getItem('asset_tracker_dark_mode');
-      return saved === 'true';
+      return saved !== null ? saved === 'true' : true;
     } catch {
       return false;
     }
@@ -518,7 +556,6 @@ export default function App() {
   // --- PERSISTENCE ---
   useEffect(() => {
     try {
-      localStorage.clear(); // <--- ADD THIS LINE HERE
       
       const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (stored) {
@@ -530,20 +567,20 @@ export default function App() {
         };
         
         // If they don't have any Sreenithi assets, let's merge Sreenithi & Priya assets from DEFAULT_ASSET_DATA
-        const hasSreeAssets = (cleaned.fixedDeposits || []).some(d => d.ownerId === 'sreenithi');
+        const hasSreeAssets = (cleaned.fixedDeposits || []).some(d => d.ownerIds === 'sreenithi');
         if (!hasSreeAssets) {
           const merged: AssetData = {
             bankSavings: [
               ...cleaned.bankSavings,
-              ...DEFAULT_ASSET_DATA.bankSavings.filter(acc => acc.ownerId === 'sreenithi' || acc.ownerId === 'priya')
+              ...DEFAULT_ASSET_DATA.bankSavings.filter(acc => acc.ownerIds === 'sreenithi' || acc.ownerIds === 'priya')
             ],
             fixedDeposits: [
               ...cleaned.fixedDeposits,
-              ...DEFAULT_ASSET_DATA.fixedDeposits.filter(dep => dep.ownerId === 'sreenithi' || dep.ownerId === 'priya')
+              ...DEFAULT_ASSET_DATA.fixedDeposits.filter(dep => dep.ownerIds === 'sreenithi' || dep.ownerIds === 'priya')
             ],
             mutualFunds: [
               ...cleaned.mutualFunds,
-              ...DEFAULT_ASSET_DATA.mutualFunds.filter(fund => fund.ownerId === 'sreenithi' || fund.ownerId === 'priya')
+              ...DEFAULT_ASSET_DATA.mutualFunds.filter(fund => fund.ownerIds === 'sreenithi' || fund.ownerIds === 'priya')
             ]
           };
           setAssetData(merged);
@@ -653,10 +690,19 @@ export default function App() {
   };
 
   const filteredAssetData = useMemo(() => {
+    const isVisible = (item: { ownerIds?: string[] }) => {
+      // If no ownerIds defined, show to everyone
+      if (!item.ownerIds || item.ownerIds.length === 0) return true;
+      
+      // Check if there is any intersection between 
+      // the asset's owners and the currently selected users
+      return item.ownerIds.some(id => selectedUserIds.includes(id));
+    };
+
     return {
-      bankSavings: assetData.bankSavings.filter(item => !item.ownerId || selectedUserIds.includes(item.ownerId)),
-      fixedDeposits: assetData.fixedDeposits.filter(item => !item.ownerId || selectedUserIds.includes(item.ownerId)),
-      mutualFunds: assetData.mutualFunds.filter(item => !item.ownerId || selectedUserIds.includes(item.ownerId)),
+      bankSavings: assetData.bankSavings.filter(isVisible),
+      fixedDeposits: assetData.fixedDeposits.filter(isVisible),
+      mutualFunds: assetData.mutualFunds.filter(isVisible),
     };
   }, [assetData, selectedUserIds]);
 
@@ -766,7 +812,7 @@ export default function App() {
         <>
  
       {/* --- DESKTOP SIDEBAR --- */}
-      <aside className="hidden md:flex flex-col w-60 glass-panel shrink-0 border-r border-white/20 h-full z-30 p-5 text-slate-800 dark:text-slate-100 isolate transform-gpu">
+      <aside className="hidden md:flex flex-col w-60 mr-6 glass-panel shrink-0 border border-white/20 h-full z-30 p-5 text-slate-800 dark:text-slate-100 isolate transform-gpu">
         
         {/* Brand Header */}
         <div className="flex items-center justify-between pb-6 border-b border-slate-200/20 mb-8">
@@ -808,6 +854,7 @@ export default function App() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
+                // 'relative' is essential here so the highlight stays locked to the button
                 className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-colors cursor-pointer relative group ${
                   isActive 
                     ? 'text-indigo-950 dark:text-indigo-100 font-bold' 
@@ -818,9 +865,9 @@ export default function App() {
                 {isActive && (
                   <motion.div 
                     layoutId="activeTabGlow"
-                    // 'absolute -inset-0.5' makes the glow slightly larger than the button
-                    // 'rounded-xl' keeps the glow curved
-                    className="absolute -inset-0.5 liquid-glass-active rounded-[1rem] z-0"
+                    // Use rounded-xl here to match the button's curves
+                    // Use 'z-0' to ensure it stays behind the text
+                    className="absolute inset-0 liquid-glass-active rounded-xl z-0"
                     transition={{ type: "spring", stiffness: 380, damping: 30 }}
                   />
                 )}
@@ -1647,7 +1694,7 @@ export default function App() {
                     interestRate: 4.00,
                     currency: 'INR',
                     notes: `${newUser.name}'s default savings`,
-                    ownerId: newUser.id
+                    ownerIds: [newUser.id]
                   };
                   
                   const newFund: MutualFund = {
@@ -1658,7 +1705,7 @@ export default function App() {
                     averageNav: 150,
                     currentNav: 172.40,
                     currency: 'INR',
-                    ownerId: newUser.id
+                    ownerIds: newUser.id
                   };
 
                   const updatedAssets = {
@@ -1775,7 +1822,7 @@ export default function App() {
                     interestRate: 4.00,
                     currency: 'INR',
                     notes: `${newUser.name}'s default savings`,
-                    ownerId: newUser.id
+                    ownerIds: newUser.id
                   };
                   
                   const newFund: MutualFund = {
@@ -1786,7 +1833,7 @@ export default function App() {
                     averageNav: 150,
                     currentNav: 172.40,
                     currency: 'INR',
-                    ownerId: newUser.id
+                    ownerIds: newUser.id
                   };
 
                   const updatedAssets = {
