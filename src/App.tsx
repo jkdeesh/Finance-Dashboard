@@ -2226,7 +2226,7 @@ export default function App() {
                     name="portfolioName"
                     required
                     placeholder="e.g., Sreenithi, Trust, Corporate"
-                    className="w-full bg-slate-50 dark:bg-slate-850 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all font-medium"
+                    className="w-full bg-slate-50 dark:bg-slate-850 !text-black border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all font-medium"
                   />
                 </div>
 
