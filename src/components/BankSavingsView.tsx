@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { BankAccount, CURRENCIES, CurrencyCode, convertCurrency } from '../types';
+import { BankAccount, CURRENCIES, CurrencyCode, convertCurrency, safeRandomUUID } from '../types';
 import { GlassCard } from './GlassCard';
+import { InstitutionLogo } from './InstitutionLogo';
 import { 
   Plus, 
   Trash2, 
@@ -25,6 +26,7 @@ interface BankSavingsViewProps {
   onDeleteAccount: (id: string) => void;
   selectedCurrency: CurrencyCode;
   onBackToDashboard: () => void;
+  selectedUserIds?: string[];
 }
 
 export const BankSavingsView: React.FC<BankSavingsViewProps> = ({
@@ -34,6 +36,7 @@ export const BankSavingsView: React.FC<BankSavingsViewProps> = ({
   onDeleteAccount,
   selectedCurrency,
   onBackToDashboard,
+  selectedUserIds,
 }) => {
   // Search & Filter state
   const [searchTerm, setSearchTerm] = useState('');
@@ -156,7 +159,7 @@ export const BankSavingsView: React.FC<BankSavingsViewProps> = ({
     const finalAccountType = accountType === 'Custom' ? customAccountType.trim() : accountType;
 
     const accountData: BankAccount = {
-      id: editingId || crypto.randomUUID(),
+      id: editingId || safeRandomUUID(),
       bankName: bankName.trim(),
       accountType: finalAccountType,
       accountNumber: accountNumber.trim() || '•••• N/A',
@@ -166,7 +169,7 @@ export const BankSavingsView: React.FC<BankSavingsViewProps> = ({
       notes: notes.trim() || undefined,
       ownerIds: editingId 
         ? accounts.find(a => a.id === editingId)?.ownerIds || [] 
-        : ['Username'] // Replace 'jagadeesh' with your logic for the default owner
+        : (selectedUserIds && selectedUserIds.length > 0 ? [selectedUserIds[0]] : ['jagadeesh'])
     };
 
     if (editingId) {
@@ -208,7 +211,7 @@ export const BankSavingsView: React.FC<BankSavingsViewProps> = ({
       </div>
 
       {/* Analytics Row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <GlassCard className="flex items-center gap-4">
           <div className="p-3 bg-sky-500/10 rounded-2xl text-sky-700 dark:text-sky-400 border border-sky-500/10">
             <Coins className="h-6 w-6" />
@@ -426,7 +429,7 @@ export const BankSavingsView: React.FC<BankSavingsViewProps> = ({
           </div>
         </div>
 
-        {/* Desktop List Table */}
+        {/* Desktop and Mobile Views */}
         {filteredAccounts.length === 0 ? (
           <div className="text-center py-12 text-slate-500">
             <Search className="h-10 w-10 text-slate-300 mx-auto mb-2" />
@@ -434,69 +437,143 @@ export const BankSavingsView: React.FC<BankSavingsViewProps> = ({
             <p className="text-xs text-slate-600 mt-1">Try resetting filters or add a new bank record above.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-slate-200/20 text-slate-500 dark:text-slate-200 text-xs font-bold">
-                  <th className="pb-3 pr-4">Bank Institution</th>
-                  <th className="pb-3 px-4">Account Type</th>
-                  <th className="pb-3 px-4">Acc. Number</th>
-                  <th className="pb-3 px-4 text-right">Interest Rate</th>
-                  <th className="pb-3 px-4 text-right">Current Balance</th>
-                  <th className="pb-3 pl-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200/10 text-xs">
-                {filteredAccounts.map((acc) => (
-                  <tr key={acc.id} className="hover:bg-white/10 transition-colors group">
-                    <td className="py-4 pr-4">
-                      <div>
-                        <span className="font-bold text-slate-900 dark:text-slate-100 text-sm block">{acc.bankName}</span>
-                        {acc.notes && <span className="text-slate-500 dark:text-slate-300 text-[10px] italic mt-0.5 block">{acc.notes}</span>}
+          <>
+            {/* Desktop List Table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-200/20 text-slate-500 dark:text-slate-200 text-xs font-bold">
+                    <th className="pb-3 pr-4">Bank Institution</th>
+                    <th className="pb-3 px-4">Account Type</th>
+                    <th className="pb-3 px-4">Acc. Number</th>
+                    <th className="pb-3 px-4 text-right">Interest Rate</th>
+                    <th className="pb-3 px-4 text-right">Current Balance</th>
+                    <th className="pb-3 pl-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200/10 text-xs">
+                  {filteredAccounts.map((acc) => (
+                    <tr key={acc.id} className="hover:bg-white/10 transition-colors group">
+                      <td className="py-4 pr-4">
+                        <div className="flex items-center gap-3">
+                          <InstitutionLogo name={acc.bankName} size="sm" className="shrink-0" />
+                          <div className="min-w-0">
+                            <span className="font-bold text-slate-900 dark:text-slate-100 text-sm block truncate">{acc.bankName}</span>
+                            {acc.notes && <span className="text-slate-500 dark:text-slate-300 text-[10px] italic mt-0.5 block truncate">{acc.notes}</span>}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4 text-slate-700 dark:text-slate-200">
+                        <span className="px-2 py-1 rounded-full bg-slate-100/80 dark:bg-slate-800/80 text-[10px] font-semibold border border-slate-200/50 dark:border-slate-700/50">
+                          {acc.accountType}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4 text-slate-600 dark:text-slate-300 font-mono">
+                        {acc.accountNumber.length <= 4 ? `•••• ${acc.accountNumber}` : acc.accountNumber}
+                      </td>
+                      <td className="py-4 px-4 text-right font-semibold text-slate-800 dark:text-slate-200 font-mono">
+                        {acc.interestRate.toFixed(2)}% APY
+                      </td>
+                      <td className="py-4 px-4 text-right font-bold text-slate-900 dark:text-slate-100 text-sm font-mono">
+                        <div>{formatAccountCurrency(acc.balance, acc.currency)}</div>
+                        {acc.currency && acc.currency !== selectedCurrency && (
+                          <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                            ≈ {formatCurrency(convertCurrency(acc.balance, acc.currency, selectedCurrency))}
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-4 pl-4 text-right">
+                        <div className="flex justify-end gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => handleEditClick(acc)}
+                            className="p-1.5 hover:bg-white/40 dark:hover:bg-slate-800/40 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg transition-colors cursor-pointer"
+                            title="Edit"
+                          >
+                            <Edit3 className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => setDeletingAccount(acc)}
+                            className="p-1.5 hover:bg-rose-50 dark:hover:bg-rose-950/20 text-rose-600 dark:text-rose-400 rounded-lg transition-colors cursor-pointer"
+                            title="Delete"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile List Cards */}
+            <div className="block md:hidden space-y-4">
+              {filteredAccounts.map((acc) => (
+                <div 
+                  key={acc.id} 
+                  className="p-4 rounded-2xl bg-white/20 border border-white/30 shadow-sm flex flex-col gap-3 group"
+                >
+                  <div className="flex justify-between items-start gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <InstitutionLogo name={acc.bankName} size="md" className="shrink-0" />
+                      <div className="min-w-0">
+                        <span className="font-extrabold text-slate-950 dark:text-slate-100 text-sm block truncate">{acc.bankName}</span>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="px-1.5 py-0.5 rounded bg-slate-100/80 dark:bg-slate-800/80 text-[9px] font-bold border border-slate-200/50 dark:border-slate-700/50 whitespace-nowrap">
+                            {acc.accountType}
+                          </span>
+                          <span className="text-slate-500 dark:text-slate-400 text-[10px] font-mono whitespace-nowrap">
+                            #{acc.accountNumber.length <= 4 ? acc.accountNumber : acc.accountNumber.slice(-4)}
+                          </span>
+                        </div>
                       </div>
-                    </td>
-                    <td className="py-4 px-4 text-slate-700 dark:text-slate-200">
-                      <span className="px-2 py-1 rounded-full bg-slate-100/80 dark:bg-slate-800/80 text-[10px] font-semibold border border-slate-200/50 dark:border-slate-700/50">
-                        {acc.accountType}
-                      </span>
-                    </td>
-                    <td className="py-4 px-4 text-slate-600 dark:text-slate-300 font-mono">
-                      {acc.accountNumber.length <= 4 ? `•••• ${acc.accountNumber}` : acc.accountNumber}
-                    </td>
-                    <td className="py-4 px-4 text-right font-semibold text-slate-800 dark:text-slate-200 font-mono">
-                      {acc.interestRate.toFixed(2)}% APY
-                    </td>
-                    <td className="py-4 px-4 text-right font-bold text-slate-900 dark:text-slate-100 text-sm font-mono">
-                      <div>{formatAccountCurrency(acc.balance, acc.currency)}</div>
+                    </div>
+
+                    <div className="flex gap-1 shrink-0">
+                      <button
+                        onClick={() => handleEditClick(acc)}
+                        className="p-1.5 hover:bg-white/40 dark:hover:bg-slate-800/40 text-slate-700 dark:text-slate-300 rounded-lg transition-colors cursor-pointer"
+                        title="Edit"
+                      >
+                        <Edit3 className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => setDeletingAccount(acc)}
+                        className="p-1.5 hover:bg-rose-50 dark:hover:bg-rose-950/20 text-rose-600 dark:text-rose-400 rounded-lg transition-colors cursor-pointer"
+                        title="Delete"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {acc.notes && (
+                    <p className="text-slate-500 dark:text-slate-300 text-[10px] italic line-clamp-2 px-1">
+                      {acc.notes}
+                    </p>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-3 pt-2.5 border-t border-slate-200/10 text-xs">
+                    <div>
+                      <span className="text-slate-500 dark:text-slate-400 text-[9px] block uppercase font-semibold">Yield Rate</span>
+                      <span className="font-mono font-bold text-slate-800 dark:text-slate-200">{acc.interestRate.toFixed(2)}% APY</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-slate-500 dark:text-slate-400 text-[9px] block uppercase font-semibold">Current Balance</span>
+                      <div className="font-mono font-extrabold text-slate-900 dark:text-slate-100 text-sm">
+                        {formatAccountCurrency(acc.balance, acc.currency)}
+                      </div>
                       {acc.currency && acc.currency !== selectedCurrency && (
-                        <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium font-mono">
                           ≈ {formatCurrency(convertCurrency(acc.balance, acc.currency, selectedCurrency))}
                         </div>
                       )}
-                    </td>
-                    <td className="py-4 pl-4 text-right">
-                      <div className="flex justify-end gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => handleEditClick(acc)}
-                          className="p-1.5 hover:bg-white/40 dark:hover:bg-slate-800/40 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg transition-colors cursor-pointer"
-                          title="Edit"
-                        >
-                          <Edit3 className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => setDeletingAccount(acc)}
-                          className="p-1.5 hover:bg-rose-50 dark:hover:bg-rose-950/20 text-rose-600 dark:text-rose-400 rounded-lg transition-colors cursor-pointer"
-                          title="Delete"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </GlassCard>
 

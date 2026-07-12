@@ -22,7 +22,7 @@ export interface FixedDeposit {
   maturityDate: string;
   notes?: string;
   currency?: CurrencyCode; // Currency per FD
-  ownerId?: string;
+  ownerIds: string[];
 }
 
 export interface MutualFund {
@@ -33,7 +33,7 @@ export interface MutualFund {
   averageNav: number; // Buy Price
   currentNav: number; // Current Price
   currency?: CurrencyCode; // Currency per MF
-  ownerId?: string;
+  ownerIds: string[];
 }
 
 export interface UserProfile {
@@ -47,9 +47,42 @@ export interface AssetData {
   bankSavings: BankAccount[];
   fixedDeposits: FixedDeposit[];
   mutualFunds: MutualFund[];
+  immovableAssets: ImmovableAsset[];
+  insurances: InsurancePolicy[];
 }
 
-export type TabType = 'dashboard' | 'savings' | 'deposits' | 'funds' | 'account';
+export type TabType = 'dashboard' | 'savings' | 'deposits' | 'funds' | 'terrafirma' | 'insurances' | 'account';
+
+export interface ImmovableAsset {
+  id: string;
+  propertyName: string;
+  propertyType: string; // e.g. "Residential", "Commercial", "Agricultural", "Vacant Land"
+  area: number;
+  unit: 'sqft' | 'cents' | 'grounds' | 'acres' | 'hectares';
+  locationName: string;
+  latitude: number;
+  longitude: number;
+  estimatedValue: number;
+  currency?: CurrencyCode;
+  notes?: string;
+  ownerIds: string[];
+}
+
+export interface InsurancePolicy {
+  id: string;
+  policyName: string;
+  policyType: string; // e.g. "Life (LIC)", "Health", "Vehicle", "Home", "Other"
+  policyNumber: string;
+  premiumAmount: number;
+  frequency: 'Monthly' | 'Quarterly' | 'Half-Yearly' | 'Annually';
+  sumAssured: number;
+  startDate: string;
+  dueDate: string;
+  status: 'Active' | 'Lapsed' | 'Matured';
+  notes?: string;
+  currency?: CurrencyCode;
+  ownerIds: string[];
+}
 
 export type CurrencyCode = 'INR' | 'USD' | 'EUR' | 'GBP' | 'JPY';
 
@@ -129,4 +162,11 @@ export function convertCurrency(amount: number, from: CurrencyCode, to: Currency
   if (from === to) return amount;
   const usdAmount = amount / EXCHANGE_RATES[from];
   return usdAmount * EXCHANGE_RATES[to];
+}
+
+export function safeRandomUUID(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'uuid-' + Math.random().toString(36).substring(2, 15) + '-' + Date.now().toString(36);
 }

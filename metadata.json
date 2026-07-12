@@ -1,6 +1,6 @@
 {
   "name": "Asset Tracker",
-  "description": "A minimalist personal asset tracking dashboard with a modern glassmorphic interface for tracking savings, deposits, and mutual funds.",
+  "description": "A personal asset tracking dashboard with a modern glassmorphic interface for savings, deposits, mutual funds, landed estate holdings with map markers, and InsureShield policies, supported by AI assistant Max.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

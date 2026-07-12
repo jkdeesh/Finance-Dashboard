@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { FixedDeposit, CURRENCIES, CurrencyCode, convertCurrency } from '../types';
+import { FixedDeposit, CURRENCIES, CurrencyCode, convertCurrency, safeRandomUUID } from '../types';
 import { GlassCard } from './GlassCard';
+import { InstitutionLogo } from './InstitutionLogo';
 import { 
   Plus, 
   Trash2, 
@@ -33,6 +34,7 @@ interface FixedDepositsViewProps {
   onDeleteDeposit: (id: string) => void;
   selectedCurrency: CurrencyCode;
   onBackToDashboard: () => void;
+  selectedUserIds?: string[];
 }
 
 export const FixedDepositsView: React.FC<FixedDepositsViewProps> = ({
@@ -42,6 +44,7 @@ export const FixedDepositsView: React.FC<FixedDepositsViewProps> = ({
   onDeleteDeposit,
   selectedCurrency,
   onBackToDashboard,
+  selectedUserIds,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -177,7 +180,7 @@ export const FixedDepositsView: React.FC<FixedDepositsViewProps> = ({
     }
 
     const depositData: FixedDeposit = {
-      id: editingId || crypto.randomUUID(),
+      id: editingId || safeRandomUUID(),
       bankName: bankName.trim(),
       depositNumber: depositNumber.trim() || '•••• N/A',
       principal: Number(principal),
@@ -186,6 +189,9 @@ export const FixedDepositsView: React.FC<FixedDepositsViewProps> = ({
       maturityDate,
       currency: depositCurrency,
       notes: notes.trim() || undefined,
+      ownerIds: editingId
+        ? deposits.find(d => d.id === editingId)?.ownerIds || []
+        : (selectedUserIds && selectedUserIds.length > 0 ? [selectedUserIds[0]] : ['jagadeesh'])
     };
 
     if (editingId) {
@@ -227,7 +233,7 @@ export const FixedDepositsView: React.FC<FixedDepositsViewProps> = ({
       </div>
 
       {/* Analytics Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <GlassCard className="flex items-center gap-4">
           <div className="p-3 bg-amber-500/10 rounded-2xl text-amber-700 dark:text-amber-400 border border-amber-500/10">
             <TrendingUp className="h-6 w-6" />
@@ -441,20 +447,25 @@ export const FixedDepositsView: React.FC<FixedDepositsViewProps> = ({
                 return (
                   <div 
                     key={dep.id} 
-                    className="p-5 rounded-2xl bg-white/20 hover:bg-white/35 transition-all border border-white/30 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-sm group"
+                    className="p-5 rounded-2xl bg-white/20 hover:bg-white/35 transition-all border border-white/30 flex flex-col md:flex-row justify-between items-start md:items-center gap-5 shadow-sm group"
                   >
                     {/* Left: Info Details */}
-                    <div className="space-y-2 flex-1 w-full">
-                      <div className="flex justify-between md:justify-start items-center gap-3">
-                        <span className="font-extrabold text-slate-950 dark:text-slate-100 text-sm">{dep.bankName}</span>
-                        <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200 dark:border-amber-900/50 text-[9px] font-mono font-bold uppercase">
-                          No. {dep.depositNumber}
-                        </span>
-                        {calcs.isMatured ? (
-                          <span className="px-2 py-0.5 rounded-full bg-slate-500/20 text-slate-800 dark:text-slate-200 text-[10px] font-bold">Matured</span>
-                        ) : (
-                          <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 text-[10px] font-bold">Active</span>
-                        )}
+                    <div className="space-y-3 flex-1 w-full">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <InstitutionLogo name={dep.bankName} size="md" />
+                        <div className="min-w-0">
+                          <span className="font-extrabold text-slate-950 dark:text-slate-100 text-sm block truncate">{dep.bankName}</span>
+                          <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                            <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200 dark:border-amber-900/30 text-[9px] font-mono font-bold uppercase whitespace-nowrap">
+                              No. {dep.depositNumber}
+                            </span>
+                            {calcs.isMatured ? (
+                              <span className="px-1.5 py-0.5 rounded-full bg-slate-500/20 text-slate-800 dark:text-slate-200 text-[9px] font-bold whitespace-nowrap">Matured</span>
+                            ) : (
+                              <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-800 dark:text-emerald-950/40 dark:text-emerald-300 text-[9px] font-bold whitespace-nowrap">Active</span>
+                            )}
+                          </div>
+                        </div>
                       </div>
 
                       {/* Tenure Progress bar */}
@@ -465,26 +476,26 @@ export const FixedDepositsView: React.FC<FixedDepositsViewProps> = ({
                             style={{ width: `${calcs.percentageElapsed}%` }}
                           />
                         </div>
-                        <div className="flex justify-between text-[10px] text-slate-500 dark:text-slate-300 mt-1 font-mono">
-                          <span>Start: {dep.startDate}</span>
-                          <span className="font-bold text-amber-800">{calcs.isMatured ? 'Matured' : `${calcs.remainingDays} Days Left`}</span>
-                          <span>Matures: {dep.maturityDate}</span>
+                        <div className="flex flex-wrap justify-between items-center gap-1.5 text-[10px] text-slate-500 dark:text-slate-300 mt-1 font-mono">
+                          <span className="whitespace-nowrap">Start: {dep.startDate}</span>
+                          <span className="font-bold text-amber-800 dark:text-amber-400 whitespace-nowrap">{calcs.isMatured ? 'Matured' : `${calcs.remainingDays} Days Left`}</span>
+                          <span className="whitespace-nowrap">Matures: {dep.maturityDate}</span>
                         </div>
                       </div>
 
                       {dep.notes && <p className="text-slate-500 dark:text-slate-300 text-[10px] italic">{dep.notes}</p>}
                     </div>
 
-                    {/* Middle: Yield values */}
-                    <div className="flex justify-between md:justify-end items-center gap-8 w-full md:w-auto md:px-6 pt-3 md:pt-0 border-t md:border-t-0 border-slate-200/10">
+                    {/* Middle: Yield values - Responsive grid on mobile, row on desktop */}
+                    <div className="grid grid-cols-2 gap-4 w-full md:w-auto md:flex md:items-center md:gap-8 md:px-6 pt-3 md:pt-0 border-t md:border-t-0 border-slate-200/10 shrink-0">
                       <div className="text-left md:text-right">
                         <span className="text-[10px] text-slate-500 dark:text-slate-400 block uppercase font-semibold">Principal & APY</span>
-                        <div className="font-mono font-bold text-slate-800 dark:text-slate-200 text-sm">
+                        <div className="font-mono font-bold text-slate-800 dark:text-slate-200 text-sm whitespace-nowrap">
                           {formatAccountCurrency(dep.principal, dep.currency)} 
                           <span className="text-xs text-amber-600 dark:text-amber-400 font-semibold ml-1">@{dep.interestRate}%</span>
                         </div>
                         {dep.currency && dep.currency !== selectedCurrency && (
-                          <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium font-mono">
+                          <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium font-mono whitespace-nowrap">
                             ≈ {formatCurrency(convertCurrency(dep.principal, dep.currency, selectedCurrency))}
                           </div>
                         )}
@@ -492,11 +503,11 @@ export const FixedDepositsView: React.FC<FixedDepositsViewProps> = ({
 
                       <div className="text-left md:text-right">
                         <span className="text-[10px] text-slate-500 dark:text-slate-400 block uppercase font-semibold">Maturity Return</span>
-                        <div className="font-mono font-bold text-emerald-800 dark:text-emerald-400 text-sm">
+                        <div className="font-mono font-bold text-emerald-800 dark:text-emerald-400 text-sm whitespace-nowrap">
                           {formatAccountCurrency(calcs.maturityValue, dep.currency)}
                         </div>
                         {dep.currency && dep.currency !== selectedCurrency && (
-                          <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium font-mono">
+                          <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium font-mono whitespace-nowrap">
                             ≈ {formatCurrency(convertCurrency(calcs.maturityValue, dep.currency, selectedCurrency))}
                           </div>
                         )}
@@ -504,16 +515,18 @@ export const FixedDepositsView: React.FC<FixedDepositsViewProps> = ({
                     </div>
 
                     {/* Right: Actions */}
-                    <div className="flex justify-end gap-1 w-full md:w-auto pt-2 md:pt-0 opacity-80 group-hover:opacity-100 transition-opacity">
+                    <div className="flex justify-end gap-1 w-full md:w-auto pt-2 md:pt-0 opacity-80 group-hover:opacity-100 transition-opacity border-t md:border-t-0 border-slate-200/10 shrink-0">
                       <button
                         onClick={() => handleEditClick(dep)}
                         className="p-2 hover:bg-white/40 dark:hover:bg-slate-800/40 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-xl transition-colors cursor-pointer"
+                        title="Edit CD"
                       >
                         <Edit3 className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => setDeletingDeposit(dep)}
                         className="p-2 hover:bg-rose-50 dark:hover:bg-rose-950/20 text-rose-600 dark:text-rose-400 rounded-xl transition-colors cursor-pointer"
+                        title="Delete CD"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>

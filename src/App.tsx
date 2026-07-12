@@ -10,12 +10,18 @@ import {
   WALLPAPERS, 
   Wallpaper, 
   convertCurrency,
-  UserProfile
+  UserProfile,
+  ImmovableAsset,
+  InsurancePolicy,
+  safeRandomUUID
 } from './types';
 import { DashboardView } from './components/DashboardView';
 import { BankSavingsView } from './components/BankSavingsView';
 import { FixedDepositsView } from './components/FixedDepositsView';
 import { MutualFundsView } from './components/MutualFundsView';
+import { LandedEstatesView } from './components/LandedEstatesView';
+import { InsureShieldView } from './components/InsureShieldView';
+import { MaxAssistant } from './components/MaxAssistant';
 import { FullPageLoginView } from './components/FullPageLoginView';
 import { AccountTabView } from './components/AccountTabView';
 import { 
@@ -44,9 +50,23 @@ import {
   TrendingUp,
   IndianRupee,
   Trash2,
-  RefreshCw
+  RefreshCw,
+  Upload,
+  Camera,
+  Home,
+  Shield,
+  Bot,
+  Sparkles,
+  Send,
+  MessageSquare
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+
+const SILHOUETTES = {
+  man: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="50" fill="%23c7d2fe"/><path d="M50 30c6.627 0 12 5.373 12 12s-5.373 12-12 12-12-5.373-12-12 5.373-12 12-12zm-25 40c0-9.941 8.059-18 18-18h14c9.941 0 18 8.059 18 18v6H25v-6z" fill="%234f46e5"/></svg>',
+  woman: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="50" fill="%23fbcfe8"/><path d="M50 28c6.075 0 11 4.925 11 11 0 4.836-3.125 8.941-7.466 10.42a12.916 12.916 0 01-7.068 0C42.125 47.941 39 43.836 39 39c0-6.075 4.925-11 11-11zm-23 41c0-8.837 7.163-16 16-16h14c8.837 0 16 7.163 16 16v5H27v-5z" fill="%23db2777"/></svg>',
+  family: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="50" fill="%23fed7aa"/><path d="M38 34c4.418 0 8 3.582 8 8s-3.582 8-8 8-8-3.582-8-8 3.582-8 8-8zm-16 26c0-6.627 5.373-12 12-12h8c6.627 0 12 5.373 12 12v4H22v-4z" fill="%23ea580c" opacity="0.85"/><path d="M62 34c4.418 0 8 3.582 8 8s-3.582 8-8 8-8-3.582-8-8 3.582-8 8-8zm-12 26c0-6.627 5.373-12 12-12h8c6.627 0 12 5.373 12 12v4H50v-4z" fill="%23ea580c" opacity="0.85"/><path d="M50 25c4.97 0 9 4.03 9 9s-4.03 9-9 9-9-4.03-9-9 4.03-9 9-9zm-18 30c0-7.732 6.268-14 14-14h8c7.732 0 14 6.268 14 14v4H32v-4z" fill="%23c2410c"/></svg>'
+};
 
 const RupeeCoin = ({ className, ...props }: any) => {
   return (
@@ -74,255 +94,320 @@ const getBankLogo = (bankName: string) => {
 
 const LOCAL_STORAGE_KEY = 'asset_tracker_portfolio';
 
-const DEFAULT_USERS: UserProfile[] = [
+const DEMO_USERS: UserProfile[] = [
   {
-    id: 'jagadeesh',
-    name: 'Jagadeesh',
-    initials: 'J',
+    id: 'aditya',
+    name: 'Aditya',
+    initials: 'A',
     avatarColor: 'bg-indigo-600 text-white border-indigo-500'
   },
   {
-    id: 'sreenithi',
-    name: 'Sreenithi',
-    initials: 'S',
+    id: 'nisha',
+    name: 'Nisha',
+    initials: 'N',
     avatarColor: 'bg-emerald-600 text-white border-emerald-500'
+  },
+  {
+    id: 'kavya',
+    name: 'Kavya',
+    initials: 'K',
+    avatarColor: 'bg-purple-600 text-white border-purple-500'
   }
 ];
 
-const DEFAULT_ASSET_DATA: AssetData = {
+const DEMO_ASSET_DATA: AssetData = {
   bankSavings: [
     {
       id: 'sav-1',
       bankName: 'ICICI Bank',
       accountType: 'NRE Account',
-      accountNumber: '••••',
-      balance: 4591000,
+      accountNumber: '•••• 4892',
+      balance: 3120000,
       interestRate: 3.50,
       currency: 'INR',
-      notes: 'Jagadeesh ICICI NRE',
-      ownerIds: ['jagadeesh']
+      notes: 'Aditya NRE savings',
+      ownerIds: ['aditya']
     },
     {
       id: 'sav-2',
-      bankName: 'ICICI Bank',
-      accountType: 'NRO Account',
-      accountNumber: '••••',
-      balance: 32679,
-      interestRate: 3.50,
+      bankName: 'HDFC Bank',
+      accountType: 'Savings Account',
+      accountNumber: '•••• 1054',
+      balance: 625000,
+      interestRate: 3.00,
       currency: 'INR',
-      notes: 'Jagadeesh ICICI NRO',
-      ownerIds: ['jagadeesh']
+      notes: 'Nisha Salary account',
+      ownerIds: ['nisha']
     },
     {
       id: 'sav-3',
-      bankName: 'HDFC Bank',
+      bankName: 'State Bank of India',
       accountType: 'Savings Account',
-      accountNumber: '••••',
-      balance: 38789,
-      interestRate: 3.00,
+      accountNumber: '•••• 7741',
+      balance: 185000,
+      interestRate: 2.70,
       currency: 'INR',
-      notes: 'Jagadeesh HDFC account',
-      ownerIds: ['jagadeesh']
+      notes: 'Family Joint savings',
+      ownerIds: ['aditya', 'nisha']
     },
     {
       id: 'sav-4',
-      bankName: 'ICICI Bank',
-      accountType: 'Savings Account',
-      accountNumber: '••••',
-      balance: 143000,
-      interestRate: 3.50,
-      currency: 'INR',
-      notes: 'Sreenithi ICICI account',
-      ownerIds: ['sreenithi']
-    },
-    {
-      id: 'sav-5',
-      bankName: 'IDFC First Bank',
-      accountType: 'Savings Account',
-      accountNumber: '••••',
-      balance: 682000,
-      interestRate: 4.50,
-      currency: 'INR',
-      notes: 'Sreenithi IDFC account',
-      ownerIds: ['sreenithi']
-    },
-    {
-      id: 'sav-db',
       bankName: 'Deutsche Bank',
-      accountType: 'Savings Account',
-      accountNumber: '••••',
-      balance: 7000,
-      interestRate: 2.00,
-      currency: 'EUR',
-      notes: 'Deutsche Bank primary',
-      ownerIds: ['jagadeesh']
-    },
-    {
-      id: 'sav-dkb',
-      bankName: 'DKB',
       accountType: 'Checking Account',
-      accountNumber: '••••',
-      balance: 25000,
-      interestRate: 1.50,
+      accountNumber: '•••• 9812',
+      balance: 14500,
+      interestRate: 1.25,
       currency: 'EUR',
-      notes: 'DKB Cash',
-      ownerIds: ['jagadeesh', 'sreenithi']
+      notes: 'Euro Travel checking',
+      ownerIds: ['aditya']
     }
   ],
   fixedDeposits: [
     {
       id: 'fd-1',
       bankName: 'HDFC Bank',
-      depositNumber: 'HDFC - Jaggu FD1',
-      principal: 110000,
-      interestRate: 7.20,
-      startDate: '2023-09-14',
-      maturityDate: '2026-08-14',
+      depositNumber: 'HDFC - Term Dep #1',
+      principal: 350000,
+      interestRate: 7.15,
+      startDate: '2024-03-15',
+      maturityDate: '2027-03-15',
       currency: 'INR',
-      notes: 'Savings Category',
-      ownerIds: ['jagadeesh']
+      notes: 'Kavya Higher Education',
+      ownerIds: ['aditya', 'kavya']
     },
     {
       id: 'fd-2',
-      bankName: 'HDFC Bank',
-      depositNumber: 'HDFC - Jaggu FD2',
-      principal: 100000,
-      interestRate: 7.35,
-      startDate: '2024-10-30',
-      maturityDate: '2027-09-30',
+      bankName: 'ICICI Bank',
+      depositNumber: 'ICICI - Tax Saver FD',
+      principal: 150000,
+      interestRate: 7.25,
+      startDate: '2025-01-10',
+      maturityDate: '2030-01-10',
       currency: 'INR',
-      notes: 'Savings Category',
-      ownerIds: ['jagadeesh']
+      notes: 'Tax Saver 80C',
+      ownerIds: ['aditya']
     },
     {
       id: 'fd-3',
-      bankName: 'ICICI Bank',
-      depositNumber: 'ICICI - Jaggu FD1',
-      principal: 55000,
-      interestRate: 7.25,
-      startDate: '2025-01-08',
-      maturityDate: '2027-01-08',
+      bankName: 'State Bank of India',
+      depositNumber: 'SBI - Nisha FD',
+      principal: 200000,
+      interestRate: 6.85,
+      startDate: '2025-07-20',
+      maturityDate: '2026-07-20',
       currency: 'INR',
-      notes: 'Savings Category',
-      ownerIds: ['jagadeesh']
-    },
-    {
-      id: 'fd-4',
-      bankName: 'ICICI Bank',
-      depositNumber: 'ICICI - Jaggu FD2',
-      principal: 10000,
-      interestRate: 6.25,
-      startDate: '2026-04-24',
-      maturityDate: '2027-04-25',
-      currency: 'INR',
-      notes: 'Savings Category',
-      ownerIds: ['jagadeesh']
-    },
-    {
-      id: 'fd-5',
-      bankName: 'ICICI Bank',
-      depositNumber: 'ICICI - Sree FD 1',
-      principal: 24125,
-      interestRate: 6.25,
-      startDate: '2025-09-09',
-      maturityDate: '2026-09-09',
-      currency: 'INR',
-      notes: 'Savings Category',
-      ownerIds: ['sreenithi']
-    },
-    {
-      id: 'fd-6',
-      bankName: 'ICICI Bank',
-      depositNumber: 'ICICI - Sree FD2',
-      principal: 10939,
-      interestRate: 6.25,
-      startDate: '2026-01-31',
-      maturityDate: '2027-04-30',
-      currency: 'INR',
-      notes: 'Savings Category',
-      ownerIds: ['sreenithi']
-    },
-    {
-      id: 'fd-7',
-      bankName: 'ICICI Bank',
-      depositNumber: 'ICICI - Sree FD3',
-      principal: 180000,
-      interestRate: 7.25,
-      startDate: '2025-04-14',
-      maturityDate: '2026-10-14',
-      currency: 'INR',
-      notes: 'Savings Category',
-      ownerIds: ['sreenithi']
+      notes: 'Emergency reserve',
+      ownerIds: ['nisha']
     }
   ],
   mutualFunds: [
     {
       id: 'mf-1',
-      fundName: 'HDFC',
+      fundName: 'SBI Bluechip Fund Direct-Growth',
       category: 'Equity Fund',
-      units: 1000,
-      averageNav: 106.00,
-      currentNav: 187.07,
+      units: 1450,
+      averageNav: 82.40,
+      currentNav: 121.85,
       currency: 'INR',
-      ownerIds: ['jagadeesh']
+      ownerIds: ['aditya']
     },
     {
       id: 'mf-2',
-      fundName: 'SUNDRAM MUTUAL',
+      fundName: 'Parag Parikh Flexi Cap Fund Direct',
       category: 'Equity Fund',
-      units: 1000,
-      averageNav: 51.00,
-      currentNav: 51.38,
+      units: 2100,
+      averageNav: 54.10,
+      currentNav: 91.15,
       currency: 'INR',
-      ownerIds: ['jagadeesh']
+      ownerIds: ['aditya', 'nisha']
     },
     {
       id: 'mf-3',
-      fundName: 'UTI MUTUAL',
+      fundName: 'HDFC Mid-Cap Opportunities Fund',
       category: 'Equity Fund',
-      units: 1000,
-      averageNav: 68.00,
-      currentNav: 73.97,
+      units: 950,
+      averageNav: 110.50,
+      currentNav: 148.30,
       currency: 'INR',
-      ownerIds: ['jagadeesh']
+      ownerIds: ['nisha']
     },
     {
       id: 'mf-4',
-      fundName: 'INVESCO INDIA CONTRA FUND',
+      fundName: 'Mirae Asset Large Cap Fund',
       category: 'Equity Fund',
-      units: 1000,
-      averageNav: 50.00,
-      currentNav: 54.87,
+      units: 1250,
+      averageNav: 95.00,
+      currentNav: 112.75,
       currency: 'INR',
-      ownerIds: ['jagadeesh']
+      ownerIds: ['aditya']
+    }
+  ],
+  immovableAssets: [
+    {
+      id: 'prop-1',
+      propertyName: 'Prestige Shantiniketan Apartment',
+      propertyType: 'Residential',
+      area: 1850,
+      unit: 'sqft',
+      locationName: 'Whitefield, Bangalore',
+      latitude: 12.9845,
+      longitude: 77.7324,
+      estimatedValue: 16500000,
+      currency: 'INR',
+      notes: 'Family primary apartment, rented out currently.',
+      ownerIds: ['aditya', 'nisha']
     },
     {
-      id: 'mf-5',
-      fundName: 'MOTILAL OSWAL LARGE MIDCAP',
-      category: 'Equity Fund',
-      units: 1000,
-      averageNav: 50.00,
-      currentNav: 62.91,
+      id: 'prop-2',
+      propertyName: 'ECR Coastal Plots',
+      propertyType: 'Vacant Land',
+      area: 4.5,
+      unit: 'grounds',
+      locationName: 'ECR, Chennai',
+      latitude: 12.8423,
+      longitude: 80.2285,
+      estimatedValue: 9200000,
       currency: 'INR',
-      ownerIds: ['jagadeesh']
+      notes: 'Beachfront residential plot near Uthandi.',
+      ownerIds: ['aditya']
     },
     {
-      id: 'mf-6',
-      fundName: 'NIPPON INDIA LARGE CAP FUND',
-      category: 'Equity Fund',
-      units: 1000,
-      averageNav: 100.00,
-      currentNav: 109.37,
+      id: 'prop-3',
+      propertyName: 'Anamalai Coconut Grove',
+      propertyType: 'Agricultural',
+      area: 3.2,
+      unit: 'acres',
+      locationName: 'Pollachi, Tamil Nadu',
+      latitude: 10.6589,
+      longitude: 77.0124,
+      estimatedValue: 12000000,
       currency: 'INR',
-      ownerIds: ['jagadeesh']
+      notes: 'Yields organic coconuts quarterly.',
+      ownerIds: ['nisha']
+    }
+  ],
+  insurances: [
+    {
+      id: 'ins-1',
+      policyName: 'LIC Jeevan Anand Plan',
+      policyType: 'Life (LIC)',
+      policyNumber: 'LIC-8429104',
+      premiumAmount: 24000,
+      frequency: 'Annually',
+      sumAssured: 1000000,
+      startDate: '2018-05-10',
+      dueDate: '2027-05-10',
+      status: 'Active',
+      notes: 'Endowment policy with survival benefits.',
+      currency: 'INR',
+      ownerIds: ['aditya']
+    },
+    {
+      id: 'ins-2',
+      policyName: 'Star Family Optima Health',
+      policyType: 'Health',
+      policyNumber: 'STAR-291048',
+      premiumAmount: 18500,
+      frequency: 'Annually',
+      sumAssured: 500000,
+      startDate: '2021-12-01',
+      dueDate: '2026-12-01',
+      status: 'Active',
+      notes: 'Floater cover for both Aditya and Nisha.',
+      currency: 'INR',
+      ownerIds: ['aditya', 'nisha']
     }
   ]
 };
 
 export default function App() {
+  const [loggedInAccount, setLoggedInAccount] = useState<{ email: string; name?: string } | null>(() => {
+    try {
+      const saved = localStorage.getItem('asset_tracker_logged_in_account');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [assetData, setAssetData] = useState<AssetData>(DEFAULT_ASSET_DATA);
+
+  const [users, setUsers] = useState<UserProfile[]>(() => {
+    try {
+      if (loggedInAccount) {
+        const emailKey = loggedInAccount.email.replace(/[^a-zA-Z0-9]/g, '_');
+        const saved = localStorage.getItem(`asset_tracker_users_${emailKey}`);
+        if (saved) {
+          return JSON.parse(saved) as UserProfile[];
+        }
+        // First time login - set one profile for themselves
+        const name = loggedInAccount.name || loggedInAccount.email.split('@')[0];
+        const initialUser: UserProfile = {
+          id: name.toLowerCase().replace(/[^a-z0-9]/g, ''),
+          name: name,
+          initials: name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) || name.charAt(0).toUpperCase(),
+          avatarColor: 'bg-indigo-600 text-white border-indigo-500'
+        };
+        return [initialUser];
+      }
+      return DEMO_USERS;
+    } catch {
+      return DEMO_USERS;
+    }
+  });
+
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>(() => {
+    try {
+      if (loggedInAccount) {
+        const emailKey = loggedInAccount.email.replace(/[^a-zA-Z0-9]/g, '_');
+        const saved = localStorage.getItem(`asset_tracker_selected_user_ids_${emailKey}`);
+        if (saved) {
+          return JSON.parse(saved) as string[];
+        }
+        const name = loggedInAccount.name || loggedInAccount.email.split('@')[0];
+        return [name.toLowerCase().replace(/[^a-z0-9]/g, '')];
+      }
+      return DEMO_USERS.map(u => u.id);
+    } catch {
+      return DEMO_USERS.map(u => u.id);
+    }
+  });
+
+  const ensureIdsExist = (data: any): AssetData => {
+    if (!data) return { bankSavings: [], fixedDeposits: [], mutualFunds: [], immovableAssets: [], insurances: [] };
+    return {
+      bankSavings: (data.bankSavings || []).map((x: any) => ({ ...x, id: x.id || safeRandomUUID() })),
+      fixedDeposits: (data.fixedDeposits || []).map((x: any) => ({ ...x, id: x.id || safeRandomUUID() })),
+      mutualFunds: (data.mutualFunds || []).map((x: any) => ({ ...x, id: x.id || safeRandomUUID() })),
+      immovableAssets: (data.immovableAssets || []).map((x: any) => ({ ...x, id: x.id || safeRandomUUID() })),
+      insurances: (data.insurances || []).map((x: any) => ({ ...x, id: x.id || safeRandomUUID() }))
+    };
+  };
+
+  const [assetData, setAssetData] = useState<AssetData>(() => {
+    try {
+      if (loggedInAccount) {
+        const emailKey = loggedInAccount.email.replace(/[^a-zA-Z0-9]/g, '_');
+        const saved = localStorage.getItem(`asset_tracker_portfolio_${emailKey}`);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          return ensureIdsExist(parsed);
+        }
+        return {
+          bankSavings: [],
+          fixedDeposits: [],
+          mutualFunds: [],
+          immovableAssets: [],
+          insurances: []
+        };
+      }
+      return ensureIdsExist(DEMO_ASSET_DATA);
+    } catch {
+      return ensureIdsExist(DEMO_ASSET_DATA);
+    }
+  });
+
   const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>(() => {
     try {
       const saved = localStorage.getItem('asset_tracker_currency');
@@ -331,6 +416,7 @@ export default function App() {
       return 'INR';
     }
   });
+
   const [selectedWallpaper, setSelectedWallpaper] = useState<string>(() => {
     try {
       const saved = localStorage.getItem('asset_tracker_wallpaper');
@@ -371,54 +457,38 @@ export default function App() {
     }
   }, [isDarkMode]);
 
-  const [users, setUsers] = useState<UserProfile[]>(() => {
-    try {
-      const saved = localStorage.getItem('asset_tracker_users');
-      if (saved) {
-        const parsed = JSON.parse(saved) as UserProfile[];
-        // Check if Sreenithi profile is present. If not, auto-restore the full default family profiles
-        const hasSree = parsed.some(u => u.id === 'sreenithi');
-        if (!hasSree) {
-          return DEFAULT_USERS;
-        }
-        return parsed;
-      }
-      return DEFAULT_USERS;
-    } catch {
-      return DEFAULT_USERS;
-    }
-  });
-
-  const [selectedUserIds, setSelectedUserIds] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem('asset_tracker_selected_user_ids');
-      if (saved) {
-        const parsed = JSON.parse(saved) as string[];
-        // Auto-select all if Sreenithi was missing
-        if (!parsed.includes('sreenithi')) {
-          return DEFAULT_USERS.map(u => u.id);
-        }
-        return parsed;
-      }
-      return DEFAULT_USERS.map(u => u.id);
-    } catch {
-      return DEFAULT_USERS.map(u => u.id);
-    }
-  });
-
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMobileUserMenuOpen, setIsMobileUserMenuOpen] = useState(false);
   const [isAuthPopupOpen, setIsAuthPopupOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signup');
 
-  const [loggedInAccount, setLoggedInAccount] = useState<{ email: string; name?: string } | null>(() => {
-    try {
-      const saved = localStorage.getItem('asset_tracker_logged_in_account');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
+  const [profilePic, setProfilePic] = useState<string>(SILHOUETTES.man);
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+
+  const handleProfilePicChange = (newPic: string) => {
+    setProfilePic(newPic);
+    if (loggedInAccount) {
+      const emailKey = loggedInAccount.email.replace(/[^a-zA-Z0-9]/g, '_');
+      try {
+        localStorage.setItem(`asset_tracker_profile_pic_${emailKey}`, newPic);
+      } catch (e) {
+        console.warn('Failed to save profile picture', e);
+      }
     }
-  });
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === 'string') {
+          handleProfilePicChange(reader.result);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   useEffect(() => {
     try {
@@ -433,11 +503,11 @@ export default function App() {
   }, [loggedInAccount]);
 
   // Restore function to bring back all family profiles & default portfolio assets
-  const handleRestoreJagadeesh = () => {
-    setUsers(DEFAULT_USERS);
-    setSelectedUserIds(DEFAULT_USERS.map(u => u.id));
-    setAssetData(DEFAULT_ASSET_DATA);
-    saveToLocalStorage(DEFAULT_ASSET_DATA);
+  const handleResetDemoPortfolios = () => {
+    setUsers(DEMO_USERS);
+    setSelectedUserIds(DEMO_USERS.map(u => u.id));
+    setAssetData(DEMO_ASSET_DATA);
+    saveToLocalStorage(DEMO_ASSET_DATA);
     setIsAuthPopupOpen(false);
   };
 
@@ -449,21 +519,102 @@ export default function App() {
     }
   }, [users.length]);
 
+  // Keep track of loaded email to avoid transitioning state collisions
+  const [loadedEmail, setLoadedEmail] = useState<string>(() => loggedInAccount?.email || '');
+
+  // Synchronize state when loggedInAccount changes (e.g., logging out or logging in as another user)
   useEffect(() => {
-    try {
-      localStorage.setItem('asset_tracker_users', JSON.stringify(users));
-    } catch (e) {
-      console.warn('Failed to save users', e);
+    if (loggedInAccount) {
+      const emailKey = loggedInAccount.email.replace(/[^a-zA-Z0-9]/g, '_');
+      const usersKey = `asset_tracker_users_${emailKey}`;
+      const selectedKey = `asset_tracker_selected_user_ids_${emailKey}`;
+      const assetKey = `asset_tracker_portfolio_${emailKey}`;
+      const avatarKey = `asset_tracker_profile_pic_${emailKey}`;
+
+      const savedAvatar = localStorage.getItem(avatarKey);
+      setProfilePic(savedAvatar || SILHOUETTES.man);
+
+      let savedUsers = localStorage.getItem(usersKey);
+      let savedSelected = localStorage.getItem(selectedKey);
+      let savedAssets = localStorage.getItem(assetKey);
+
+      // Seed with beautiful random AI-generated demo data if this is the demo account and no data is saved yet
+      if (loggedInAccount.email.toLowerCase() === 'demo@familyasset.ai' && !savedUsers && !savedAssets) {
+        localStorage.setItem(usersKey, JSON.stringify(DEMO_USERS));
+        localStorage.setItem(selectedKey, JSON.stringify(DEMO_USERS.map(u => u.id)));
+        localStorage.setItem(assetKey, JSON.stringify(DEMO_ASSET_DATA));
+        savedUsers = JSON.stringify(DEMO_USERS);
+        savedSelected = JSON.stringify(DEMO_USERS.map(u => u.id));
+        savedAssets = JSON.stringify(DEMO_ASSET_DATA);
+      }
+
+      let currentUsers: UserProfile[];
+      if (savedUsers) {
+        currentUsers = JSON.parse(savedUsers);
+      } else {
+        const name = loggedInAccount.name || loggedInAccount.email.split('@')[0];
+        const initialUser: UserProfile = {
+          id: name.toLowerCase().replace(/[^a-z0-9]/g, ''),
+          name: name,
+          initials: name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) || name.charAt(0).toUpperCase(),
+          avatarColor: 'bg-indigo-600 text-white border-indigo-500'
+        };
+        currentUsers = [initialUser];
+      }
+
+      setUsers(currentUsers);
+
+      if (savedSelected) {
+        setSelectedUserIds(JSON.parse(savedSelected));
+      } else {
+        setSelectedUserIds(currentUsers.map(u => u.id));
+      }
+
+      if (savedAssets) {
+        setAssetData(ensureIdsExist(JSON.parse(savedAssets)));
+      } else {
+        setAssetData({
+          bankSavings: [],
+          fixedDeposits: [],
+          mutualFunds: [],
+          immovableAssets: [],
+          insurances: []
+        });
+      }
+      setLoadedEmail(loggedInAccount.email);
+    } else {
+      setUsers([]);
+      setSelectedUserIds([]);
+      setAssetData({
+        bankSavings: [],
+        fixedDeposits: [],
+        mutualFunds: [],
+        immovableAssets: [],
+        insurances: []
+      });
+      setLoadedEmail('');
+      setProfilePic(SILHOUETTES.man);
     }
-  }, [users]);
+  }, [loggedInAccount]);
+
+  // User-scoped saving effects
+  useEffect(() => {
+    if (!loggedInAccount || !loadedEmail || loggedInAccount.email !== loadedEmail) return;
+    const emailKey = loadedEmail.replace(/[^a-zA-Z0-9]/g, '_');
+    const usersKey = `asset_tracker_users_${emailKey}`;
+    if (users.length > 0) {
+      localStorage.setItem(usersKey, JSON.stringify(users));
+    }
+  }, [users, loggedInAccount, loadedEmail]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('asset_tracker_selected_user_ids', JSON.stringify(selectedUserIds));
-    } catch (e) {
-      console.warn('Failed to save selected user IDs', e);
+    if (!loggedInAccount || !loadedEmail || loggedInAccount.email !== loadedEmail) return;
+    const emailKey = loadedEmail.replace(/[^a-zA-Z0-9]/g, '_');
+    const selectedKey = `asset_tracker_selected_user_ids_${emailKey}`;
+    if (selectedUserIds.length > 0) {
+      localStorage.setItem(selectedKey, JSON.stringify(selectedUserIds));
     }
-  }, [selectedUserIds]);
+  }, [selectedUserIds, loggedInAccount, loadedEmail]);
 
   const [dynamicWallpapers, setDynamicWallpapers] = useState<Wallpaper[]>([]);
   const [isBgDropdownOpen, setIsBgDropdownOpen] = useState(false);
@@ -502,29 +653,25 @@ export default function App() {
         console.warn('Bing API fetch failed, using daily-seeded high-quality fallbacks', err);
       }
       
-      // Fallback: Generate 10 daily seeded 4K images
-      const today = new Date();
-      const daySeed = today.getFullYear() * 1000 + (today.getMonth() + 1) * 31 + today.getDate();
-      const categories = [
-        'cyberpunk-street',
-        'deep-space-nebula',
-        'epic-mountain',
-        'ocean-waves-aerial',
-        'serene-forest',
-        'golden-desert-dunes',
-        'futuristic-cityscape',
-        'coastal-sunset',
-        'abstract-gradient',
-        'minimalist-aesthetic'
+      // Fallback: Use verified high-quality 4K Unsplash image IDs for categories
+      const fallbackList = [
+        { name: 'Cyberpunk Street', photoId: 'photo-1515621061946-eff1c2a352bd' },
+        { name: 'Deep Space Nebula', photoId: 'photo-1462331940025-496dfbfc7564' },
+        { name: 'Epic Mountain', photoId: 'photo-1464822759023-fed622ff2c3b' },
+        { name: 'Ocean Waves Aerial', photoId: 'photo-1505118380757-91f5f5632de0' },
+        { name: 'Serene Forest', photoId: 'photo-1441974231531-c6227db76b6e' },
+        { name: 'Golden Desert Dunes', photoId: 'photo-1509316975850-ff9c5deb0cd9' },
+        { name: 'Futuristic Cityscape', photoId: 'photo-1477959858617-67f85cf4f1df' },
+        { name: 'Coastal Sunset', photoId: 'photo-1507525428034-b723cf961d3e' },
+        { name: 'Abstract Gradient', photoId: 'photo-1557683316-973673baf926' },
+        { name: 'Minimalist Aesthetic', photoId: 'photo-1494438639946-1ebd1d2038b5' }
       ];
       
-      const fallbackWallpapers = categories.map((cat, idx) => {
-        const sig = daySeed + idx;
-        const name = cat.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+      const fallbackWallpapers = fallbackList.map((item, idx) => {
         return {
           id: `unsplash-daily-${idx}`,
-          name: name,
-          url: `https://images.unsplash.com/featured/3840x2160?sig=${sig}&q=80&auto=format&fit=crop&w=3840&q=${cat}`
+          name: item.name,
+          url: `https://images.unsplash.com/${item.photoId}?q=80&w=1920&auto=format&fit=crop`
         };
       });
       setDynamicWallpapers(fallbackWallpapers);
@@ -554,52 +701,12 @@ export default function App() {
   };
 
   // --- PERSISTENCE ---
-  useEffect(() => {
-    try {
-      
-      const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored) as AssetData;
-        const cleaned: AssetData = {
-          bankSavings: parsed.bankSavings || [],
-          fixedDeposits: parsed.fixedDeposits || [],
-          mutualFunds: parsed.mutualFunds || []
-        };
-        
-        // If they don't have any Sreenithi assets, let's merge Sreenithi & Priya assets from DEFAULT_ASSET_DATA
-        const hasSreeAssets = (cleaned.fixedDeposits || []).some(d => d.ownerIds === 'sreenithi');
-        if (!hasSreeAssets) {
-          const merged: AssetData = {
-            bankSavings: [
-              ...cleaned.bankSavings,
-              ...DEFAULT_ASSET_DATA.bankSavings.filter(acc => acc.ownerIds === 'sreenithi' || acc.ownerIds === 'priya')
-            ],
-            fixedDeposits: [
-              ...cleaned.fixedDeposits,
-              ...DEFAULT_ASSET_DATA.fixedDeposits.filter(dep => dep.ownerIds === 'sreenithi' || dep.ownerIds === 'priya')
-            ],
-            mutualFunds: [
-              ...cleaned.mutualFunds,
-              ...DEFAULT_ASSET_DATA.mutualFunds.filter(fund => fund.ownerIds === 'sreenithi' || fund.ownerIds === 'priya')
-            ]
-          };
-          setAssetData(merged);
-          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(merged));
-        } else {
-          setAssetData(cleaned);
-        }
-      } else {
-        setAssetData(DEFAULT_ASSET_DATA);
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(DEFAULT_ASSET_DATA));
-      }
-    } catch (e) {
-      console.error('Failed to read from localStorage', e);
-    }
-  }, []);
-
   const saveToLocalStorage = (newData: AssetData) => {
+    if (!loggedInAccount) return;
     try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newData));
+      const emailKey = loggedInAccount.email.replace(/[^a-zA-Z0-9]/g, '_');
+      const assetKey = `asset_tracker_portfolio_${emailKey}`;
+      localStorage.setItem(assetKey, JSON.stringify(newData));
     } catch (e) {
       console.error('Failed to save to localStorage', e);
     }
@@ -689,6 +796,70 @@ export default function App() {
     saveToLocalStorage(updated);
   };
 
+  // --- LANDED ESTATES CONTROLLERS ---
+  const handleAddImmovableAsset = (prop: Omit<ImmovableAsset, 'id'> & { id?: string }) => {
+    const newAsset: ImmovableAsset = {
+      ...prop,
+      id: prop.id || safeRandomUUID()
+    };
+    const updated = {
+      ...assetData,
+      immovableAssets: [...(assetData.immovableAssets || []), newAsset]
+    };
+    setAssetData(updated);
+    saveToLocalStorage(updated);
+  };
+
+  const handleEditImmovableAsset = (edited: ImmovableAsset) => {
+    const updated = {
+      ...assetData,
+      immovableAssets: (assetData.immovableAssets || []).map(p => p.id === edited.id ? edited : p)
+    };
+    setAssetData(updated);
+    saveToLocalStorage(updated);
+  };
+
+  const handleDeleteImmovableAsset = (id: string) => {
+    const updated = {
+      ...assetData,
+      immovableAssets: (assetData.immovableAssets || []).filter(p => p.id !== id)
+    };
+    setAssetData(updated);
+    saveToLocalStorage(updated);
+  };
+
+  // --- INSURESHIELD CONTROLLERS ---
+  const handleAddInsurance = (ins: Omit<InsurancePolicy, 'id'> & { id?: string }) => {
+    const newPolicy: InsurancePolicy = {
+      ...ins,
+      id: ins.id || safeRandomUUID()
+    };
+    const updated = {
+      ...assetData,
+      insurances: [...(assetData.insurances || []), newPolicy]
+    };
+    setAssetData(updated);
+    saveToLocalStorage(updated);
+  };
+
+  const handleEditInsurance = (edited: InsurancePolicy) => {
+    const updated = {
+      ...assetData,
+      insurances: (assetData.insurances || []).map(i => i.id === edited.id ? edited : i)
+    };
+    setAssetData(updated);
+    saveToLocalStorage(updated);
+  };
+
+  const handleDeleteInsurance = (id: string) => {
+    const updated = {
+      ...assetData,
+      insurances: (assetData.insurances || []).filter(i => i.id !== id)
+    };
+    setAssetData(updated);
+    saveToLocalStorage(updated);
+  };
+
   const filteredAssetData = useMemo(() => {
     const isVisible = (item: { ownerIds?: string[] }) => {
       // If no ownerIds defined, show to everyone
@@ -703,6 +874,8 @@ export default function App() {
       bankSavings: assetData.bankSavings.filter(isVisible),
       fixedDeposits: assetData.fixedDeposits.filter(isVisible),
       mutualFunds: assetData.mutualFunds.filter(isVisible),
+      immovableAssets: (assetData.immovableAssets || []).filter(isVisible),
+      insurances: (assetData.insurances || []).filter(isVisible),
     };
   }, [assetData, selectedUserIds]);
 
@@ -710,7 +883,8 @@ export default function App() {
   const totalBalance = 
     filteredAssetData.bankSavings.reduce((sum, item) => sum + convertCurrency(item.balance, item.currency || 'INR', selectedCurrency), 0) +
     filteredAssetData.fixedDeposits.reduce((sum, item) => sum + convertCurrency(item.principal, item.currency || 'INR', selectedCurrency), 0) +
-    filteredAssetData.mutualFunds.reduce((sum, item) => sum + convertCurrency(item.units * item.currentNav, item.currency || 'INR', selectedCurrency), 0);
+    filteredAssetData.mutualFunds.reduce((sum, item) => sum + convertCurrency(item.units * item.currentNav, item.currency || 'INR', selectedCurrency), 0) +
+    filteredAssetData.immovableAssets.reduce((sum, item) => sum + convertCurrency(item.estimatedValue, item.currency || 'INR', selectedCurrency), 0);
 
   // Tabs layout configs
   const tabs = [
@@ -718,6 +892,8 @@ export default function App() {
     { id: 'savings' as TabType, label: 'Bank Savings', icon: Landmark },
     { id: 'deposits' as TabType, label: 'Fixed Deposits', icon: RupeeCoin },
     { id: 'funds' as TabType, label: 'Mutual Funds', icon: TrendingUp },
+    { id: 'terrafirma' as TabType, label: 'Landed Estates', icon: Home },
+    { id: 'insurances' as TabType, label: 'InsureShield', icon: Shield },
     { id: 'account' as TabType, label: 'Accounts', icon: User },
   ];
 
@@ -730,11 +906,6 @@ export default function App() {
         toggleDarkMode={toggleDarkMode} 
         onLoginSuccess={(email, name) => {
           setLoggedInAccount({ email, name });
-          // If no user profiles exist on login, restore defaults so it's not empty
-          if (users.length === 0) {
-            setUsers(DEFAULT_USERS);
-            setSelectedUserIds(DEFAULT_USERS.map(u => u.id));
-          }
         }} 
       />
     );
@@ -742,7 +913,7 @@ export default function App() {
 
   return (
     <div 
-      className={`h-screen w-full relative flex flex-col md:flex-row font-sans overflow-hidden antialiased transition-colors duration-500 ${isDarkMode ? 'dark text-slate-100' : 'text-slate-800'}`}
+      className={`h-screen w-full relative flex flex-col lg:flex-row font-sans overflow-hidden antialiased transition-colors duration-500 ${isDarkMode ? 'dark text-slate-100' : 'text-slate-800'}`}
       style={{
         backgroundImage: isDarkMode 
           ? `linear-gradient(to bottom, rgba(15, 23, 42, 0.45) 0%, rgba(15, 23, 42, 0.7) 100%), url('${activeWallpaper.url}')`
@@ -799,11 +970,11 @@ export default function App() {
               
               <button
                 type="button"
-                onClick={handleRestoreJagadeesh}
+                onClick={handleResetDemoPortfolios}
                 className="flex-grow sm:flex-initial flex items-center justify-center gap-2 px-6 py-3 bg-white/45 dark:bg-slate-800/45 hover:bg-white/60 dark:hover:bg-slate-800/65 border border-slate-200/60 dark:border-slate-750 text-slate-800 dark:text-slate-200 font-extrabold rounded-xl text-xs transition-all shadow-sm active:scale-[0.98] cursor-pointer"
               >
                 <RefreshCw className="h-4 w-4 text-emerald-500 animate-pulse" />
-                <span>Restore Default Portfolios</span>
+                <span>Load Demo Portfolios</span>
               </button>
             </div>
           </motion.div>
@@ -812,37 +983,40 @@ export default function App() {
         <>
  
       {/* --- DESKTOP SIDEBAR --- */}
-      <aside className="hidden md:flex flex-col w-60 mr-6 glass-panel shrink-0 border border-white/20 h-full z-30 p-5 text-slate-800 dark:text-slate-100 isolate transform-gpu">
+      <aside className="hidden lg:flex flex-col w-60 lg:mr-6 glass-panel shrink-0 border border-white/20 h-full z-30 p-5 text-slate-800 dark:text-slate-100 isolate transform-gpu">
         
-        {/* Brand Header */}
-        <div className="flex items-center justify-between pb-6 border-b border-slate-200/20 mb-8">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="p-2.5 bg-gradient-to-tr from-indigo-600 to-indigo-400 text-white rounded-xl shadow-md shrink-0">
-              <Briefcase className="h-6 w-6" />
-            </div>
-            <div className="min-w-0">
-              <h2 className="text-lg font-display font-bold text-indigo-950 dark:text-indigo-100 tracking-tight leading-none truncate">Asset Tracker</h2>
-              <span className="text-[10px] text-slate-600 dark:text-slate-300 font-semibold uppercase tracking-widest mt-1 block truncate">Compounding Yield</span>
-            </div>
+        {/* User Account Header */}
+        <div className="flex items-center gap-3 pb-6 border-b border-slate-200/20 mb-8 relative">
+          <div className="relative group shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsAvatarModalOpen(true)}
+              className="w-11 h-11 rounded-full overflow-hidden border-2 border-indigo-500/50 hover:border-indigo-500 transition-all shadow-md cursor-pointer focus:outline-none flex items-center justify-center bg-white/20 dark:bg-slate-800/40"
+              title="Change profile picture"
+            >
+              <img
+                src={profilePic}
+                alt="Profile Avatar"
+                className="w-full h-full object-cover"
+              />
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsAvatarModalOpen(true)}
+              className="absolute -bottom-0.5 -right-0.5 bg-indigo-600 text-white rounded-full p-0.5 shadow-sm border border-white dark:border-slate-900 cursor-pointer hover:bg-indigo-500 transition-colors focus:outline-none"
+              title="Change picture"
+            >
+              <Camera className="h-2.5 w-2.5" />
+            </button>
           </div>
-          
-          {/* Theme Toggle Button */}
-          <button 
-            type="button"
-            onClick={toggleDarkMode}
-            className="p-2 ml-1 rounded-xl bg-white/20 hover:bg-white/40 border border-white/30 text-slate-800 dark:text-slate-100 transition-all cursor-pointer shadow-sm focus:outline-none shrink-0"
-            title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
-          >
-            {isDarkMode ? (
-              <svg className="h-4 w-4 text-amber-400" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m0 13.5V21M4.95 4.95l1.591 1.591m10.91 10.91l1.591 1.591M3 12h2.25m13.5 0H21M4.95 19.05l1.591-1.591m10.91-10.91l1.591-1.591M12 7.5a4.5 4.5 0 100 9 4.5 4.5 0 000-9z" />
-              </svg>
-            ) : (
-              <svg className="h-4 w-4 text-slate-700" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
-              </svg>
-            )}
-          </button>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-sm font-display font-extrabold text-indigo-950 dark:text-indigo-100 tracking-tight leading-tight truncate" title={loggedInAccount?.name || loggedInAccount?.email.split('@')[0]}>
+              {loggedInAccount?.name || loggedInAccount?.email.split('@')[0]}
+            </h2>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium lowercase truncate block mt-0.5" title={loggedInAccount?.email}>
+              {loggedInAccount?.email}
+            </span>
+          </div>
         </div>
 
         {/* Navigation Tabs */}
@@ -893,6 +1067,16 @@ export default function App() {
                     {filteredAssetData.mutualFunds.length}
                   </span>
                 )}
+                {tab.id === 'terrafirma' && (
+                  <span className="relative z-10 text-[10px] font-mono bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 px-1.5 py-0.5 rounded">
+                    {filteredAssetData.immovableAssets.length}
+                  </span>
+                )}
+                {tab.id === 'insurances' && (
+                  <span className="relative z-10 text-[10px] font-mono bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 px-1.5 py-0.5 rounded">
+                    {filteredAssetData.insurances.length}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -921,6 +1105,39 @@ export default function App() {
               </svg>
             </div>
           </div>
+        </div>
+
+        {/* Appearance Mode Selector */}
+        <div className="mt-4 text-xs">
+          <label className="block text-slate-700 dark:text-slate-300 font-bold uppercase tracking-wider text-[9px] mb-2">
+            Appearance Mode
+          </label>
+          <button
+            type="button"
+            onClick={toggleDarkMode}
+            className="w-full flex items-center justify-between bg-white/30 dark:bg-slate-800/30 hover:bg-white/45 dark:hover:bg-slate-800/45 border border-white/40 dark:border-white/10 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-slate-100 transition-all cursor-pointer shadow-sm focus:outline-none"
+          >
+            <span className="flex items-center gap-2">
+              {isDarkMode ? (
+                <>
+                  <svg className="h-4 w-4 text-amber-400 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m0 13.5V21M4.95 4.95l1.591 1.591m10.91 10.91l1.591 1.591M3 12h2.25m13.5 0H21M4.95 19.05l1.591-1.591m10.91-10.91l1.591-1.591M12 7.5a4.5 4.5 0 100 9 4.5 4.5 0 000-9z" />
+                  </svg>
+                  <span>Dark Mode</span>
+                </>
+              ) : (
+                <>
+                  <svg className="h-4 w-4 text-slate-700 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+                  </svg>
+                  <span>Light Mode</span>
+                </>
+              )}
+            </span>
+            <span className="text-[9px] bg-slate-500/10 dark:bg-white/10 text-slate-600 dark:text-slate-300 font-bold uppercase tracking-wider px-2 py-0.5 rounded border border-slate-500/10 dark:border-white/10">
+              {isDarkMode ? 'Dark' : 'Light'}
+            </span>
+          </button>
         </div>
 
         {/* Workspace Wallpaper Selector */}
@@ -1206,12 +1423,22 @@ export default function App() {
       </aside>
 
       {/* --- MOBILE NAVIGATION BAR --- */}
-      <header className="md:hidden glass-panel border-b border-white/20 sticky top-0 z-40 px-4 py-3 flex items-center justify-between text-slate-800 dark:text-slate-100">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 bg-indigo-600 text-white rounded-lg">
-            <Briefcase className="h-4 w-4" />
-          </div>
-          <span className="font-display font-extrabold text-sm text-indigo-950 dark:text-indigo-100">Asset Tracker</span>
+      <header className="lg:hidden glass-panel border-b border-white/20 sticky top-0 z-40 px-4 py-3 flex items-center justify-between text-slate-800 dark:text-slate-100">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <button
+            type="button"
+            onClick={() => setIsAvatarModalOpen(true)}
+            className="w-7 h-7 rounded-full overflow-hidden border border-indigo-500/50 shrink-0"
+          >
+            <img
+              src={profilePic}
+              alt="Profile Avatar"
+              className="w-full h-full object-cover"
+            />
+          </button>
+          <span className="font-display font-extrabold text-xs text-indigo-950 dark:text-indigo-100 truncate">
+            {loggedInAccount?.name || loggedInAccount?.email.split('@')[0]}
+          </span>
         </div>
 
         <div className="flex items-center gap-2">
@@ -1252,7 +1479,7 @@ export default function App() {
               animate={{ opacity: 0.5 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsMobileMenuOpen(false)}
-              className="fixed inset-0 bg-slate-900 z-40 md:hidden"
+              className="fixed inset-0 bg-slate-900 z-40 lg:hidden"
             />
             {/* Drawer */}
             <motion.div 
@@ -1260,24 +1487,48 @@ export default function App() {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: "spring", bounce: 0, duration: 0.35 }}
-              className="fixed top-0 bottom-0 left-0 w-60 glass-panel border-r border-white/20 z-50 p-5 flex flex-col justify-between md:hidden text-slate-800 dark:text-slate-100"
+              className="fixed top-0 bottom-0 left-0 w-60 glass-panel border-r border-white/20 z-50 py-5 flex flex-col justify-between lg:hidden text-slate-800 dark:text-slate-100 overflow-hidden"
             >
-              <div className="space-y-6">
-                <div className="flex justify-between items-center pb-4 border-b border-slate-200/20">
-                  <div className="flex items-center gap-2">
-                    <div className="p-1.5 bg-indigo-600 text-white rounded-lg">
-                      <Briefcase className="h-4 w-4" />
-                    </div>
-                    <span className="font-display font-extrabold text-sm text-indigo-950 dark:text-indigo-100">Asset Tracker</span>
-                  </div>
-                  <button 
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="p-1 hover:bg-slate-200/40 dark:hover:bg-slate-800/40 rounded-lg text-slate-500 dark:text-slate-400"
+              {/* Header Container (Fixed, Non-Scrollable) */}
+              <div className="flex justify-between items-center pb-4 border-b border-slate-200/20 min-w-0 px-5 shrink-0">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsAvatarModalOpen(true);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-8 h-8 rounded-full overflow-hidden border border-indigo-500/50 shrink-0"
                   >
-                    <X className="h-5 w-5" />
+                    <img
+                      src={profilePic}
+                      alt="Profile Avatar"
+                      className="w-full h-full object-cover"
+                    />
                   </button>
+                  <div className="min-w-0">
+                    <h2 className="text-xs font-display font-extrabold text-indigo-950 dark:text-indigo-100 truncate" title={loggedInAccount?.name || loggedInAccount?.email.split('@')[0]}>
+                      {loggedInAccount?.name || loggedInAccount?.email.split('@')[0]}
+                    </h2>
+                    <span className="text-[9px] text-slate-500 dark:text-slate-400 block truncate lowercase leading-none mt-0.5" title={loggedInAccount?.email}>
+                      {loggedInAccount?.email}
+                    </span>
+                  </div>
                 </div>
+                <button 
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="p-1 hover:bg-slate-200/40 dark:hover:bg-slate-800/40 rounded-lg text-slate-500 dark:text-slate-400 shrink-0"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
 
+              {/* Scrollable Container (Dynamic & Responsive for Small Heights & Orientations) */}
+              <div 
+                className="flex-1 overflow-y-auto px-5 py-4 space-y-5 scrollbar-none"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
+                {/* Navigation Tabs */}
                 <nav className="space-y-1 font-medium text-xs">
                   {tabs.map((tab) => {
                     const Icon = tab.icon;
@@ -1315,148 +1566,191 @@ export default function App() {
                             {filteredAssetData.mutualFunds.length}
                           </span>
                         )}
+                        {tab.id === 'terrafirma' && (
+                          <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${isActive ? 'bg-indigo-700 text-white' : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300'}`}>
+                            {filteredAssetData.immovableAssets.length}
+                          </span>
+                        )}
+                        {tab.id === 'insurances' && (
+                          <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${isActive ? 'bg-indigo-700 text-white' : 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300'}`}>
+                            {filteredAssetData.insurances.length}
+                          </span>
+                        )}
                       </button>
                     );
                   })}
                 </nav>
-              </div>
 
-              {/* Currency Selector Mobile */}
-              <div className="mt-3 pt-3 border-t border-slate-200/20 text-xs">
-                <label className="block text-slate-700 dark:text-slate-300 font-semibold uppercase tracking-wider text-[9px] mb-1.5">
-                  Portfolio Currency
-                </label>
-                <div className="relative">
-                  <select
-                    value={selectedCurrency}
-                    onChange={(e) => handleCurrencyChange(e.target.value as CurrencyCode)}
-                    className="w-full bg-white/30 dark:bg-slate-800/30 backdrop-blur-md text-slate-900 dark:text-slate-100 border border-white/40 dark:border-white/10 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer appearance-none transition-all shadow-sm"
-                  >
-                    {Object.values(CURRENCIES).map((c) => (
-                      <option key={c.code} value={c.code} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-medium">
-                        {c.symbol} &nbsp; {c.name}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-600 dark:text-slate-400">
-                    <svg className="h-3.5 w-3.5 fill-current" viewBox="0 0 20 20">
-                      <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
-                    </svg>
+                {/* Currency Selector Mobile */}
+                <div className="pt-3 border-t border-slate-200/20 text-xs">
+                  <label className="block text-slate-700 dark:text-slate-300 font-semibold uppercase tracking-wider text-[9px] mb-1.5">
+                    Portfolio Currency
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={selectedCurrency}
+                      onChange={(e) => handleCurrencyChange(e.target.value as CurrencyCode)}
+                      className="w-full bg-white/30 dark:bg-slate-800/30 backdrop-blur-md text-slate-900 dark:text-slate-100 border border-white/40 dark:border-white/10 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer appearance-none transition-all shadow-sm"
+                    >
+                      {Object.values(CURRENCIES).map((c) => (
+                        <option key={c.code} value={c.code} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-medium">
+                          {c.symbol} &nbsp; {c.name}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-600 dark:text-slate-400">
+                      <svg className="h-3.5 w-3.5 fill-current" viewBox="0 0 20 20">
+                        <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+                      </svg>
+                    </div>
                   </div>
+                </div>
+
+                {/* Appearance Mode Selector Mobile (Brought Above Background Selector!) */}
+                <div className="pt-3 border-t border-slate-200/20 text-xs">
+                  <label className="block text-slate-700 dark:text-slate-300 font-bold uppercase tracking-wider text-[9px] mb-2">
+                    Appearance Mode
+                  </label>
+                  <button
+                    type="button"
+                    onClick={toggleDarkMode}
+                    className="w-full flex items-center justify-between bg-white/30 dark:bg-slate-800/30 hover:bg-white/45 dark:hover:bg-slate-800/45 border border-white/40 dark:border-white/10 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-slate-100 transition-all cursor-pointer shadow-sm focus:outline-none"
+                  >
+                    <span className="flex items-center gap-2">
+                      {isDarkMode ? (
+                        <>
+                          <svg className="h-4 w-4 text-amber-400 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m0 13.5V21M4.95 4.95l1.591 1.591m10.91 10.91l1.591 1.591M3 12h2.25m13.5 0H21M4.95 19.05l1.591-1.591m10.91-10.91l1.591-1.591M12 7.5a4.5 4.5 0 100 9 4.5 4.5 0 000-9z" />
+                          </svg>
+                          <span>Dark Mode</span>
+                        </>
+                      ) : (
+                        <>
+                          <svg className="h-4 w-4 text-slate-700 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+                          </svg>
+                          <span>Light Mode</span>
+                        </>
+                      )}
+                    </span>
+                    <span className="text-[9px] bg-slate-500/10 dark:bg-white/10 text-slate-600 dark:text-slate-300 font-bold uppercase tracking-wider px-2 py-0.5 rounded border border-slate-500/10 dark:border-white/10">
+                      {isDarkMode ? 'Dark' : 'Light'}
+                    </span>
+                  </button>
+                </div>
+
+                {/* Wallpaper Selector Mobile */}
+                <div className="pt-3 border-t border-slate-200/20 text-xs relative">
+                  <label className="block text-slate-700 dark:text-slate-300 font-bold uppercase tracking-wider text-[9px] mb-2">
+                    Background
+                  </label>
+                  
+                  {/* Dropdown Toggle Button */}
+                  <button 
+                    type="button"
+                    onClick={() => setIsMobileBgDropdownOpen(!isMobileBgDropdownOpen)}
+                    className="w-full flex items-center justify-between bg-white/30 dark:bg-slate-800/30 hover:bg-white/45 dark:hover:bg-slate-800/45 border border-white/40 dark:border-white/10 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-slate-100 transition-all cursor-pointer shadow-sm focus:outline-none"
+                  >
+                    <span className="flex items-center gap-2 min-w-0">
+                      <div className="w-5 h-3.5 rounded-sm overflow-hidden shrink-0 border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-850">
+                        <img 
+                          src={activeWallpaper.url.replace('w=1920', 'w=40&h=30&fit=crop')} 
+                          alt="" 
+                          referrerPolicy="no-referrer"
+                          className="w-full h-full object-cover" 
+                        />
+                      </div>
+                      <span className="truncate text-[11px] text-slate-800 dark:text-slate-200 font-semibold">{activeWallpaper.name}</span>
+                    </span>
+                    <ChevronDown className={`h-3.5 w-3.5 text-slate-600 dark:text-slate-400 shrink-0 transition-transform duration-200 ${isMobileBgDropdownOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {/* Collapsible Slider Panel */}
+                  <AnimatePresence initial={false}>
+                    {isMobileBgDropdownOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                        animate={{ opacity: 1, height: 'auto', marginTop: 8 }}
+                        exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                        transition={{ duration: 0.2, ease: 'easeOut' }}
+                        className="overflow-hidden z-20 w-full"
+                      >
+                        <div className="relative flex items-center bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border border-white/50 dark:border-white/10 rounded-xl p-2 shadow-md">
+                          {/* Left scroll arrow */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const el = document.getElementById('mobile-wallpaper-slider');
+                              if (el) el.scrollLeft -= 90;
+                            }}
+                            className="absolute left-1 z-10 p-1 bg-white/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 rounded-full shadow border border-slate-200/40 dark:border-white/10 cursor-pointer transition-all hover:scale-105"
+                          >
+                            <ChevronLeft className="h-3 w-3" />
+                          </button>
+
+                          {/* Horizontal Scroll/Slider */}
+                          <div 
+                            id="mobile-wallpaper-slider"
+                            className="flex gap-2 overflow-x-auto scroll-smooth snap-x snap-mandatory py-1 px-4 scrollbar-none w-full"
+                            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                          >
+                            {allWallpapers.map((w) => {
+                              const isSelected = selectedWallpaper === w.id;
+                              const thumbUrl = w.url.replace('w=1920', 'w=80&h=54&fit=crop');
+                              return (
+                                <button
+                                  key={w.id}
+                                  type="button"
+                                  onClick={() => handleWallpaperChange(w.id)}
+                                  className="flex-none w-[64px] flex flex-col items-center gap-1 focus:outline-none group cursor-pointer snap-start"
+                                  title={w.name}
+                                >
+                                  <div 
+                                    className={`w-full aspect-[3/2] rounded-md overflow-hidden border transition-all shadow-sm ${
+                                      isSelected 
+                                        ? 'border-indigo-600 ring-2 ring-indigo-600/30 scale-[1.03]' 
+                                        : 'border-white/50 hover:border-white/90'
+                                    }`}
+                                  >
+                                    <img 
+                                      src={thumbUrl} 
+                                      alt={w.name}
+                                      referrerPolicy="no-referrer"
+                                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                    />
+                                  </div>
+                                  <span className={`text-[8px] leading-tight text-center font-semibold truncate w-full ${
+                                    isSelected ? 'text-indigo-950 dark:text-indigo-100 font-bold' : 'text-slate-600 dark:text-slate-350 group-hover:text-slate-900 dark:group-hover:text-white'
+                                  }`}>
+                                    {w.name}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          {/* Right scroll arrow */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const el = document.getElementById('mobile-wallpaper-slider');
+                              if (el) el.scrollLeft += 90;
+                            }}
+                            className="absolute right-1 z-10 p-1 bg-white/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 rounded-full shadow border border-slate-200/40 dark:border-white/10 cursor-pointer transition-all hover:scale-105"
+                          >
+                            <ChevronRight className="h-3 w-3" />
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
 
-              {/* Wallpaper Selector Mobile */}
-              <div className="my-2.5 text-xs relative">
-                <label className="block text-slate-700 dark:text-slate-300 font-bold uppercase tracking-wider text-[9px] mb-2">
-                  Background
-                </label>
-                
-                {/* Dropdown Toggle Button */}
-                <button 
-                  type="button"
-                  onClick={() => setIsMobileBgDropdownOpen(!isMobileBgDropdownOpen)}
-                  className="w-full flex items-center justify-between bg-white/30 dark:bg-slate-800/30 hover:bg-white/45 dark:hover:bg-slate-800/45 border border-white/40 dark:border-white/10 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-slate-100 transition-all cursor-pointer shadow-sm focus:outline-none"
-                >
-                  <span className="flex items-center gap-2 min-w-0">
-                    <div className="w-5 h-3.5 rounded-sm overflow-hidden shrink-0 border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-850">
-                      <img 
-                        src={activeWallpaper.url.replace('w=1920', 'w=40&h=30&fit=crop')} 
-                        alt="" 
-                        referrerPolicy="no-referrer"
-                        className="w-full h-full object-cover" 
-                      />
-                    </div>
-                    <span className="truncate text-[11px] text-slate-800 dark:text-slate-200 font-semibold">{activeWallpaper.name}</span>
-                  </span>
-                  <ChevronDown className={`h-3.5 w-3.5 text-slate-600 dark:text-slate-400 shrink-0 transition-transform duration-200 ${isMobileBgDropdownOpen ? 'rotate-180' : ''}`} />
-                </button>
-
-                {/* Collapsible Slider Panel */}
-                <AnimatePresence initial={false}>
-                  {isMobileBgDropdownOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                      animate={{ opacity: 1, height: 'auto', marginTop: 8 }}
-                      exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                      transition={{ duration: 0.2, ease: 'easeOut' }}
-                      className="overflow-hidden z-20 w-full"
-                    >
-                      <div className="relative flex items-center bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border border-white/50 dark:border-white/10 rounded-xl p-2 shadow-md">
-                        {/* Left scroll arrow */}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const el = document.getElementById('mobile-wallpaper-slider');
-                            if (el) el.scrollLeft -= 90;
-                          }}
-                          className="absolute left-1 z-10 p-1 bg-white/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 rounded-full shadow border border-slate-200/40 dark:border-white/10 cursor-pointer transition-all hover:scale-105"
-                        >
-                          <ChevronLeft className="h-3 w-3" />
-                        </button>
-
-                        {/* Horizontal Scroll/Slider */}
-                        <div 
-                          id="mobile-wallpaper-slider"
-                          className="flex gap-2 overflow-x-auto scroll-smooth snap-x snap-mandatory py-1 px-4 scrollbar-none w-full"
-                          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                        >
-                          {allWallpapers.map((w) => {
-                            const isSelected = selectedWallpaper === w.id;
-                            const thumbUrl = w.url.replace('w=1920', 'w=80&h=54&fit=crop');
-                            return (
-                              <button
-                                key={w.id}
-                                type="button"
-                                onClick={() => handleWallpaperChange(w.id)}
-                                className="flex-none w-[64px] flex flex-col items-center gap-1 focus:outline-none group cursor-pointer snap-start"
-                                title={w.name}
-                              >
-                                <div 
-                                  className={`w-full aspect-[3/2] rounded-md overflow-hidden border transition-all shadow-sm ${
-                                    isSelected 
-                                      ? 'border-indigo-600 ring-2 ring-indigo-600/30 scale-[1.03]' 
-                                      : 'border-white/50 hover:border-white/90'
-                                  }`}
-                                >
-                                  <img 
-                                    src={thumbUrl} 
-                                    alt={w.name}
-                                    referrerPolicy="no-referrer"
-                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                  />
-                                </div>
-                                <span className={`text-[8px] leading-tight text-center font-semibold truncate w-full ${
-                                  isSelected ? 'text-indigo-950 dark:text-indigo-100 font-bold' : 'text-slate-600 dark:text-slate-350 group-hover:text-slate-900 dark:group-hover:text-white'
-                                }`}>
-                                  {w.name}
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </div>
-
-                        {/* Right scroll arrow */}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const el = document.getElementById('mobile-wallpaper-slider');
-                            if (el) el.scrollLeft += 90;
-                          }}
-                          className="absolute right-1 z-10 p-1 bg-white/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 rounded-full shadow border border-slate-200/40 dark:border-white/10 cursor-pointer transition-all hover:scale-105"
-                        >
-                          <ChevronRight className="h-3 w-3" />
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
               {/* Profile card footer mobile */}
-              <div className="pt-4 border-t border-slate-200/20 text-xs relative">
+              <div className="pt-4 border-t border-slate-200/20 text-xs relative px-5 shrink-0">
                 {/* Mobile Accounts Popover */}
                 <AnimatePresence>
                   {isMobileUserMenuOpen && (
@@ -1606,7 +1900,7 @@ export default function App() {
       </AnimatePresence>
 
       {/* --- MAIN PAGE CONTENT --- */}
-      <main className="flex-1 overflow-y-auto px-4 py-6 md:p-8 z-10 w-full md:w-auto min-w-0 relative isolate transform-gpu">
+      <main className="flex-1 overflow-y-auto px-4 py-6 lg:p-8 z-10 w-full lg:w-auto min-w-0 relative isolate transform-gpu">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
@@ -1628,6 +1922,7 @@ export default function App() {
                 onDeleteAccount={handleDeleteSavings}
                 selectedCurrency={selectedCurrency}
                 onBackToDashboard={() => setActiveTab('dashboard')}
+                selectedUserIds={selectedUserIds}
               />
             )}
             {activeTab === 'deposits' && (
@@ -1638,6 +1933,7 @@ export default function App() {
                 onDeleteDeposit={handleDeleteFD}
                 selectedCurrency={selectedCurrency}
                 onBackToDashboard={() => setActiveTab('dashboard')}
+                selectedUserIds={selectedUserIds}
               />
             )}
             {activeTab === 'funds' && (
@@ -1648,6 +1944,29 @@ export default function App() {
                 onDeleteFund={handleDeleteFund}
                 selectedCurrency={selectedCurrency}
                 onBackToDashboard={() => setActiveTab('dashboard')}
+                selectedUserIds={selectedUserIds}
+              />
+            )}
+            {activeTab === 'terrafirma' && (
+              <LandedEstatesView
+                assets={filteredAssetData.immovableAssets}
+                onAddAsset={handleAddImmovableAsset}
+                onEditAsset={handleEditImmovableAsset}
+                onDeleteAsset={handleDeleteImmovableAsset}
+                selectedCurrency={selectedCurrency}
+                onBackToDashboard={() => setActiveTab('dashboard')}
+                selectedUserIds={selectedUserIds}
+              />
+            )}
+            {activeTab === 'insurances' && (
+              <InsureShieldView
+                policies={filteredAssetData.insurances}
+                onAddPolicy={handleAddInsurance}
+                onEditPolicy={handleEditInsurance}
+                onDeletePolicy={handleDeleteInsurance}
+                selectedCurrency={selectedCurrency}
+                onBackToDashboard={() => setActiveTab('dashboard')}
+                selectedUserIds={selectedUserIds}
               />
             )}
             {activeTab === 'account' && (
@@ -1658,6 +1977,56 @@ export default function App() {
                   localStorage.removeItem('asset_tracker_logged_in_account');
                 }}
                 portfolios={users}
+                assetData={assetData}
+                onImportAssetData={(imported) => {
+                  setAssetData(imported);
+                  saveToLocalStorage(imported);
+
+                  // Auto-create missing portfolios/profiles from imported ownerIds
+                  const uniqueOwnerIds = new Set<string>();
+                  imported.bankSavings?.forEach(item => item.ownerIds?.forEach(id => {
+                    if (id) uniqueOwnerIds.add(id.trim().toLowerCase().replace(/[^a-z0-9]/g, ''));
+                  }));
+                  imported.fixedDeposits?.forEach(item => item.ownerIds?.forEach(id => {
+                    if (id) uniqueOwnerIds.add(id.trim().toLowerCase().replace(/[^a-z0-9]/g, ''));
+                  }));
+                  imported.mutualFunds?.forEach(item => item.ownerIds?.forEach(id => {
+                    if (id) uniqueOwnerIds.add(id.trim().toLowerCase().replace(/[^a-z0-9]/g, ''));
+                  }));
+
+                  const existingIds = users.map(u => u.id);
+                  const missingIds = Array.from(uniqueOwnerIds).filter(id => id && !existingIds.includes(id));
+
+                  if (missingIds.length > 0) {
+                    const AVATAR_COLORS = [
+                      'bg-purple-600 text-white border-purple-500',
+                      'bg-teal-600 text-white border-teal-500',
+                      'bg-rose-600 text-white border-rose-500',
+                      'bg-amber-600 text-white border-amber-500',
+                      'bg-emerald-600 text-white border-emerald-500',
+                      'bg-cyan-600 text-white border-cyan-500',
+                      'bg-indigo-600 text-white border-indigo-500'
+                    ];
+
+                    const newUsers: UserProfile[] = missingIds.map((id, index) => {
+                      const name = id.charAt(0).toUpperCase() + id.slice(1);
+                      const initials = name.slice(0, 2).toUpperCase();
+                      const avatarColor = AVATAR_COLORS[(existingIds.length + index) % AVATAR_COLORS.length];
+                      return { id, name, initials, avatarColor };
+                    });
+
+                    setUsers(prev => [...prev, ...newUsers]);
+                    setSelectedUserIds(prev => {
+                      const next = [...prev];
+                      newUsers.forEach(nu => {
+                        if (!next.includes(nu.id)) {
+                          next.push(nu.id);
+                        }
+                      });
+                      return next;
+                    });
+                  }
+                }}
                 onAddPortfolio={(name) => {
                   const id = name.toLowerCase().replace(/[^a-z0-9]/g, '') + '-' + Date.now().toString().slice(-4);
                   const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || name.charAt(0).toUpperCase();
@@ -1705,7 +2074,7 @@ export default function App() {
                     averageNav: 150,
                     currentNav: 172.40,
                     currency: 'INR',
-                    ownerIds: newUser.id
+                    ownerIds: [newUser.id]
                   };
 
                   const updatedAssets = {
@@ -1822,7 +2191,7 @@ export default function App() {
                     interestRate: 4.00,
                     currency: 'INR',
                     notes: `${newUser.name}'s default savings`,
-                    ownerIds: newUser.id
+                    ownerIds: [newUser.id]
                   };
                   
                   const newFund: MutualFund = {
@@ -1833,7 +2202,7 @@ export default function App() {
                     averageNav: 150,
                     currentNav: 172.40,
                     currency: 'INR',
-                    ownerIds: newUser.id
+                    ownerIds: [newUser.id]
                   };
 
                   const updatedAssets = {
@@ -1873,6 +2242,146 @@ export default function App() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* --- PROFILE PICTURE CHANGER POPUP MODAL --- */}
+      <AnimatePresence>
+        {isAvatarModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsAvatarModalOpen(false)}
+              className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
+            />
+
+            {/* Modal Card */}
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 15 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 15 }}
+              transition={{ type: 'spring', duration: 0.4, bounce: 0.15 }}
+              className="relative w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-2xl z-10 flex flex-col p-6 text-slate-800 dark:text-slate-100 animate-gpu"
+            >
+              {/* Close Button */}
+              <button 
+                onClick={() => setIsAvatarModalOpen(false)}
+                className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
+              >
+                <X className="h-5 w-5" />
+              </button>
+
+              {/* Header */}
+              <div className="text-center mt-2 mb-6">
+                <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-indigo-500/50 mx-auto mb-3 shadow-md bg-white">
+                  <img
+                    src={profilePic}
+                    alt="Current Profile avatar"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <h3 className="text-lg font-display font-extrabold text-slate-900 dark:text-white leading-tight">
+                  Choose Profile Picture
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  Select a classic silhouette or upload your own photo
+                </p>
+              </div>
+
+              {/* Silhouette choices */}
+              <div className="space-y-3">
+                <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-1">
+                  Default Silhouettes
+                </label>
+                <div className="grid grid-cols-3 gap-3">
+                  {/* Man silhouette option */}
+                  <button
+                    type="button"
+                    onClick={() => handleProfilePicChange(SILHOUETTES.man)}
+                    className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border-2 transition-all cursor-pointer bg-slate-50/50 dark:bg-slate-800/30 ${
+                      profilePic === SILHOUETTES.man 
+                        ? 'border-indigo-600 bg-indigo-50/20 dark:border-indigo-500/50' 
+                        : 'border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="w-11 h-11 rounded-full overflow-hidden shadow-inner shrink-0 bg-white">
+                      <img src={SILHOUETTES.man} alt="Man" className="w-full h-full object-cover" />
+                    </div>
+                    <span className="text-[10px] font-bold text-slate-700 dark:text-slate-350 tracking-tight leading-none">Man</span>
+                  </button>
+
+                  {/* Woman silhouette option */}
+                  <button
+                    type="button"
+                    onClick={() => handleProfilePicChange(SILHOUETTES.woman)}
+                    className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border-2 transition-all cursor-pointer bg-slate-50/50 dark:bg-slate-800/30 ${
+                      profilePic === SILHOUETTES.woman 
+                        ? 'border-indigo-600 bg-indigo-50/20 dark:border-indigo-500/50' 
+                        : 'border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="w-11 h-11 rounded-full overflow-hidden shadow-inner shrink-0 bg-white">
+                      <img src={SILHOUETTES.woman} alt="Woman" className="w-full h-full object-cover" />
+                    </div>
+                    <span className="text-[10px] font-bold text-slate-700 dark:text-slate-350 tracking-tight leading-none">Woman</span>
+                  </button>
+
+                  {/* Family silhouette option */}
+                  <button
+                    type="button"
+                    onClick={() => handleProfilePicChange(SILHOUETTES.family)}
+                    className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border-2 transition-all cursor-pointer bg-slate-50/50 dark:bg-slate-800/30 ${
+                      profilePic === SILHOUETTES.family 
+                        ? 'border-indigo-600 bg-indigo-50/20 dark:border-indigo-500/50' 
+                        : 'border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="w-11 h-11 rounded-full overflow-hidden shadow-inner shrink-0 bg-white">
+                      <img src={SILHOUETTES.family} alt="Family" className="w-full h-full object-cover" />
+                    </div>
+                    <span className="text-[10px] font-bold text-slate-700 dark:text-slate-350 tracking-tight leading-none">Family</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Custom Image Upload */}
+              <div className="mt-5 space-y-2">
+                <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+                  Upload Custom Photo
+                </label>
+                <label className="flex items-center justify-center gap-2.5 w-full py-3 px-4 border border-dashed border-slate-300 dark:border-slate-700 rounded-2xl bg-slate-50/30 dark:bg-slate-850/20 hover:bg-slate-50/50 dark:hover:bg-slate-850/40 cursor-pointer transition-colors text-slate-600 dark:text-slate-400">
+                  <Upload className="h-4 w-4 text-indigo-500" />
+                  <span className="text-xs font-semibold">Select Image File</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+
+              {/* Close Button at bottom */}
+              <button
+                type="button"
+                onClick={() => setIsAvatarModalOpen(false)}
+                className="mt-6 w-full py-3 bg-indigo-650 hover:bg-indigo-600 text-white font-extrabold rounded-xl text-xs transition-all cursor-pointer shadow-md flex items-center justify-center gap-1.5"
+              >
+                <Check className="h-4 w-4" />
+                <span>Confirm Changes</span>
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Real-time AI Assistant Bot Max */}
+      <MaxAssistant 
+        assetData={filteredAssetData} 
+        currency={selectedCurrency} 
+        portfolios={users}
+      />
 
     </div>
   );
