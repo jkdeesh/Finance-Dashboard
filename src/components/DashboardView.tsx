@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { AssetData, TabType, CURRENCIES, CurrencyCode, convertCurrency } from '../types';
 import { GlassCard } from './GlassCard';
+import { calculatePreciousAssetUSD } from '../services/marketRates';
 import { 
   TrendingUp, 
   Wallet, 
@@ -23,7 +24,8 @@ import {
   IndianRupee,
   Building2,
   ShieldCheck,
-  ShieldAlert
+  ShieldAlert,
+  Coins
 } from 'lucide-react';
 
 const RupeeCoin = ({ className, ...props }: any) => {
@@ -38,14 +40,15 @@ interface DashboardViewProps {
   data: AssetData;
   setActiveTab: (tab: TabType) => void;
   selectedCurrency: CurrencyCode;
+  marketRates?: any;
 }
 
-export const DashboardView: React.FC<DashboardViewProps> = ({ data, setActiveTab, selectedCurrency }) => {
+export const DashboardView: React.FC<DashboardViewProps> = ({ data, setActiveTab, selectedCurrency, marketRates }) => {
   const [hoveredSegment, setHoveredSegment] = useState<string | null>(null);
   const [activeHistoryPoint, setActiveHistoryPoint] = useState<number | null>(5); // Default to latest month
 
   const [widgetOrder, setWidgetOrder] = useState<string[]>(() => {
-    const defaultWidgets = ['trend', 'allocation', 'mutualFunds', 'landedEstates', 'insurances', 'insights'];
+    const defaultWidgets = ['trend', 'allocation', 'precious', 'mutualFunds', 'landedEstates', 'insurances', 'insights'];
     try {
       const saved = localStorage.getItem('asset_tracker_widget_order');
       if (saved) {
@@ -127,6 +130,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, setActiveTab
           return {
             trend: parsed.trend ?? 2,
             allocation: parsed.allocation ?? 1,
+            precious: parsed.precious ?? 1,
             mutualFunds: parsed.mutualFunds ?? 1,
             landedEstates: parsed.landedEstates ?? 1,
             insurances: parsed.insurances ?? 1,
@@ -140,6 +144,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, setActiveTab
     return {
       trend: 2,
       allocation: 1,
+      precious: 1,
       mutualFunds: 1,
       landedEstates: 1,
       insurances: 1,
@@ -202,6 +207,34 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, setActiveTab
   // Immovable assets (Landed Estates)
   const totalLandedEstates = (data.immovableAssets || []).reduce((sum, item) => sum + convertCurrency(item.estimatedValue, item.currency || 'INR', selectedCurrency), 0);
 
+  // Precious Vault Reserves
+  const metalRates = marketRates?.metalRates || {
+    gold24k: 78.50,
+    gold22k: 72.00,
+    gold18k: 58.80,
+    gold14k: 45.80,
+    silver999: 0.98,
+    silver925: 0.91,
+    platinum: 32.50,
+    diamondBase: 4500.00
+  };
+  const exchangeRates = marketRates?.exchangeRates || {};
+  const exchangeRate = exchangeRates[selectedCurrency] || (selectedCurrency === 'INR' ? 83.5 : 1);
+
+  const totalPreciousUSD = (data.preciousAssets || []).reduce((sum, item) => {
+    return sum + calculatePreciousAssetUSD(item, metalRates);
+  }, 0);
+  const totalPreciousValue = totalPreciousUSD * exchangeRate;
+
+  // Estimate precious invested price (fallback to 85% if bought without recording price)
+  const totalPreciousInvested = (data.preciousAssets || []).reduce((sum, item) => {
+    if (item.purchasePrice) {
+      return sum + convertCurrency(item.purchasePrice, item.purchaseCurrency || 'USD', selectedCurrency);
+    }
+    const usdVal = calculatePreciousAssetUSD(item, metalRates);
+    return sum + (usdVal * 0.85) * exchangeRate;
+  }, 0);
+
   // InsureShield calculations (Active cover sum assured and premium outgoes)
   let totalInsuranceCover = 0;
   let totalMonthlyPremium = 0;
@@ -219,8 +252,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, setActiveTab
     totalMonthlyPremium += (premiumInSelected / factor);
   });
 
-  const totalPortfolioValue = totalSavings + totalFDValue + totalMutualFundsCurrent + totalLandedEstates;
-  const totalInvestedPrincipal = totalSavings + totalFDPrincipal + totalMutualFundsInvested + totalLandedEstates;
+  const totalPortfolioValue = totalSavings + totalFDValue + totalMutualFundsCurrent + totalLandedEstates + totalPreciousValue;
+  const totalInvestedPrincipal = totalSavings + totalFDPrincipal + totalMutualFundsInvested + totalLandedEstates + totalPreciousInvested;
   const overallProfit = totalPortfolioValue - totalInvestedPrincipal;
   const overallProfitPercent = totalInvestedPrincipal > 0 ? (overallProfit / totalInvestedPrincipal) * 100 : 0;
 
@@ -229,6 +262,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, setActiveTab
   const fdPercent = totalPortfolioValue > 0 ? (totalFDValue / totalPortfolioValue) * 100 : 0;
   const fundsPercent = totalPortfolioValue > 0 ? (totalMutualFundsCurrent / totalPortfolioValue) * 100 : 0;
   const landedEstatesPercent = totalPortfolioValue > 0 ? (totalLandedEstates / totalPortfolioValue) * 100 : 0;
+  const preciousPercent = totalPortfolioValue > 0 ? (totalPreciousValue / totalPortfolioValue) * 100 : 0;
 
   // Formatting helper
   const formatCurrency = (val: number) => {
@@ -248,7 +282,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, setActiveTab
     const fdHist = totalFDValue * (0.9 + idx * 0.02);
     const fundsHist = totalMutualFundsCurrent * (0.75 + idx * 0.05);
     const landedHist = totalLandedEstates * (0.99 + idx * 0.002); // 2% annualized stable appreciation
-    const total = savingsHist + fdHist + fundsHist + landedHist;
+    const preciousHist = totalPreciousValue * (0.97 + idx * 0.005);
+    const total = savingsHist + fdHist + fundsHist + landedHist + preciousHist;
 
     return {
       month,
@@ -256,6 +291,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, setActiveTab
       deposits: fdHist,
       funds: fundsHist,
       landed: landedHist,
+      precious: preciousHist,
       total: total,
     };
   });
@@ -299,12 +335,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, setActiveTab
   const fdStroke = (fdPercent / 100) * circumference;
   const fundsStroke = (fundsPercent / 100) * circumference;
   const landedStroke = (landedEstatesPercent / 100) * circumference;
+  const preciousStroke = (preciousPercent / 100) * circumference;
 
   // Offsets (Standardized for continuous clockwise stacking)
   const savingsOffset = 0;
   const fdOffset = -savingsStroke;
   const fundsOffset = -(savingsStroke + fdStroke);
   const landedOffset = -(savingsStroke + fdStroke + fundsStroke);
+  const preciousOffset = -(savingsStroke + fdStroke + fundsStroke + landedStroke);
 
   const renderWidget = (widgetId: string, index: number) => {
     const isDragged = draggedIndex === index;
@@ -486,7 +524,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, setActiveTab
               </svg>
 
               <div className={`mt-4 grid gap-2.5 bg-white/30 dark:bg-slate-950/40 backdrop-blur-md rounded-xl p-3.5 border border-white/40 dark:border-slate-800/40 text-xs ${
-                size === 1 ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-4'
+                size === 1 ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-5'
               }`}>
                 <div className="flex flex-col min-w-0 items-center text-center">
                   <span className="w-full block text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider text-[9px] whitespace-nowrap overflow-hidden text-ellipsis text-center">Select Month</span>
@@ -509,6 +547,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, setActiveTab
                     <span className="h-1.5 w-1.5 rounded-full bg-indigo-500 shrink-0" /> Mutual Funds
                   </span>
                   <span className="w-full block font-mono font-bold text-indigo-800 dark:text-indigo-200 text-xs sm:text-sm whitespace-nowrap overflow-hidden text-ellipsis text-center">{formatCurrency(activePoint.funds)}</span>
+                </div>
+                <div className="flex flex-col min-w-0 items-center text-center">
+                  <span className="w-full flex items-center justify-center gap-1 text-amber-500 dark:text-amber-400 font-bold uppercase tracking-wider text-[9px] whitespace-nowrap overflow-hidden text-ellipsis text-center">
+                    <span className="h-1.5 w-1.5 rounded-full bg-yellow-500 shrink-0" /> Precious
+                  </span>
+                  <span className="w-full block font-mono font-bold text-amber-600 dark:text-amber-300 text-xs sm:text-sm whitespace-nowrap overflow-hidden text-ellipsis text-center">{formatCurrency(activePoint.precious || 0)}</span>
                 </div>
               </div>
             </div>
@@ -615,14 +659,30 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, setActiveTab
                     className="transition-all duration-300 cursor-pointer origin-center"
                   />
                 )}
+
+                {preciousStroke > 0 && (
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r={radius}
+                    fill="transparent"
+                    stroke="#eab308"
+                    strokeWidth={hoveredSegment === 'precious' ? '14' : '10'}
+                    strokeDasharray={`${preciousStroke + 0.5} ${circumference}`}
+                    strokeDashoffset={preciousOffset}
+                    onMouseEnter={() => setHoveredSegment('precious')}
+                    onMouseLeave={() => setHoveredSegment(null)}
+                    className="transition-all duration-300 cursor-pointer origin-center"
+                  />
+                )}
               </svg>
 
               <div className="absolute flex flex-col justify-center items-center text-center pointer-events-none select-none">
                 <span className="text-[9px] text-slate-500 dark:text-slate-400 font-bold tracking-wider uppercase transition-all duration-300">
-                  {hoveredSegment === 'savings' ? 'Savings' : hoveredSegment === 'deposits' ? 'Deposits' : hoveredSegment === 'funds' ? 'Mutual Funds' : hoveredSegment === 'landed' ? 'Properties' : 'Active'}
+                  {hoveredSegment === 'savings' ? 'Savings' : hoveredSegment === 'deposits' ? 'Deposits' : hoveredSegment === 'funds' ? 'Mutual Funds' : hoveredSegment === 'landed' ? 'Properties' : hoveredSegment === 'precious' ? 'Gold & Ornaments' : 'Active'}
                 </span>
                 <span className="text-lg font-display font-black text-slate-900 dark:text-slate-100 transition-all duration-300">
-                  {hoveredSegment === 'savings' ? `${savingsPercent.toFixed(1)}%` : hoveredSegment === 'deposits' ? `${fdPercent.toFixed(1)}%` : hoveredSegment === 'funds' ? `${fundsPercent.toFixed(1)}%` : hoveredSegment === 'landed' ? `${landedEstatesPercent.toFixed(1)}%` : '100%'}
+                  {hoveredSegment === 'savings' ? `${savingsPercent.toFixed(1)}%` : hoveredSegment === 'deposits' ? `${fdPercent.toFixed(1)}%` : hoveredSegment === 'funds' ? `${fundsPercent.toFixed(1)}%` : hoveredSegment === 'landed' ? `${landedEstatesPercent.toFixed(1)}%` : hoveredSegment === 'precious' ? `${preciousPercent.toFixed(1)}%` : '100%'}
                 </span>
               </div>
             </div>
@@ -683,6 +743,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, setActiveTab
                 </div>
                 <span className="font-mono font-bold text-slate-900 dark:text-slate-100">{landedEstatesPercent.toFixed(1)}%</span>
               </div>
+
+              <div 
+                onMouseEnter={() => setHoveredSegment('precious')}
+                onMouseLeave={() => setHoveredSegment(null)}
+                className={`flex justify-between items-center p-2 rounded-xl border transition-all ${
+                  hoveredSegment === 'precious' ? 'bg-white/40 border-yellow-300/50 shadow-sm' : 'border-transparent'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="h-3 w-3 rounded-full bg-yellow-500 border border-white/40" />
+                  <span className="font-medium text-slate-600 dark:text-slate-200">Gold & Ornaments</span>
+                </div>
+                <span className="font-mono font-bold text-slate-900 dark:text-slate-100">{preciousPercent.toFixed(1)}%</span>
+              </div>
             </div>
           </GlassCard>
           {/* Resize drag handle */}
@@ -728,31 +802,38 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, setActiveTab
               </div>
 
               <div className="space-y-3">
-                <div>
-                  <div className="flex justify-between text-xs text-slate-500 mb-1">
-                    <span className="text-slate-500 font-medium">Current Portfolio Value</span>
-                    <span className="font-semibold text-slate-800 dark:text-slate-100">{formatCurrency(totalMutualFundsCurrent)}</span>
-                  </div>
-                  <div className="w-full bg-slate-200/40 h-2 rounded-full overflow-hidden">
-                    <div 
-                      className="bg-indigo-600 h-2 rounded-full" 
-                      style={{ width: `${totalMutualFundsCurrent > 0 ? (totalMutualFundsCurrent / totalPortfolioValue) * 100 : 0}%` }}
-                    />
-                  </div>
-                </div>
+                {(() => {
+                  const maxVal = Math.max(totalMutualFundsCurrent, totalMutualFundsInvested) || 1;
+                  return (
+                    <>
+                      <div>
+                        <div className="flex justify-between text-xs text-slate-500 mb-1">
+                          <span className="text-slate-500 font-medium">Current Portfolio Value</span>
+                          <span className="font-semibold text-slate-800 dark:text-slate-100">{formatCurrency(totalMutualFundsCurrent)}</span>
+                        </div>
+                        <div className="w-full bg-slate-200/40 h-2 rounded-full overflow-hidden">
+                          <div 
+                            className="bg-indigo-600 h-2 rounded-full" 
+                            style={{ width: `${totalMutualFundsCurrent > 0 ? (totalMutualFundsCurrent / maxVal) * 100 : 0}%` }}
+                          />
+                        </div>
+                      </div>
 
-                <div>
-                  <div className="flex justify-between text-xs text-slate-500 mb-1">
-                    <span className="text-slate-500 font-medium">Invested Principle Capital</span>
-                    <span className="font-semibold text-slate-800 dark:text-slate-100">{formatCurrency(totalMutualFundsInvested)}</span>
-                  </div>
-                  <div className="w-full bg-slate-200/40 h-2 rounded-full overflow-hidden">
-                    <div 
-                      className="bg-slate-400 h-2 rounded-full" 
-                      style={{ width: `${totalMutualFundsInvested > 0 ? (totalMutualFundsInvested / totalPortfolioValue) * 100 : 0}%` }}
-                    />
-                  </div>
-                </div>
+                      <div>
+                        <div className="flex justify-between text-xs text-slate-500 mb-1">
+                          <span className="text-slate-500 font-medium">Invested Principle Capital</span>
+                          <span className="font-semibold text-slate-800 dark:text-slate-100">{formatCurrency(totalMutualFundsInvested)}</span>
+                        </div>
+                        <div className="w-full bg-slate-200/40 h-2 rounded-full overflow-hidden">
+                          <div 
+                            className="bg-slate-400 h-2 rounded-full" 
+                            style={{ width: `${totalMutualFundsInvested > 0 ? (totalMutualFundsInvested / maxVal) * 100 : 0}%` }}
+                          />
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             </div>
 
@@ -819,6 +900,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, setActiveTab
                   </p>
                 </div>
               </div>
+
+              {preciousPercent > 0 && (
+                <div className="flex gap-3 bg-white/25 dark:bg-slate-800/35 rounded-xl p-3 border border-white/40 dark:border-white/10 text-xs">
+                  <Coins className="h-5 w-5 text-yellow-500 shrink-0" />
+                  <div>
+                    <span className="font-semibold text-slate-900 dark:text-slate-100 block">Inflation Hedge Status</span>
+                    <p className="text-slate-600 dark:text-slate-300 mt-0.5 font-medium">
+                      Your precious reserves represent <b>{preciousPercent.toFixed(0)}%</b> of your portfolio. Precious metals and gems act as a robust hedge against currency dilution.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="mt-4 text-center">
@@ -830,6 +923,86 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, setActiveTab
           {/* Resize drag handle */}
           <div 
             onMouseDown={(e) => handleResizeStart(e, 'insights')}
+            className="absolute top-0 right-0 bottom-0 w-3 cursor-col-resize group-hover/widget:bg-indigo-500/5 hover:bg-indigo-500/15 active:bg-indigo-600/25 transition-colors z-20 rounded-r-3xl hidden md:flex items-center justify-center"
+            title="Drag right edge to resize"
+          >
+            <div className="w-1 h-8 rounded-full bg-slate-300 dark:bg-slate-700 opacity-0 group-hover/widget:opacity-100 transition-opacity flex flex-col gap-1 justify-between py-1">
+              <span className="w-1 h-1 rounded-full bg-slate-400 dark:bg-slate-500" />
+              <span className="w-1 h-1 rounded-full bg-slate-400 dark:bg-slate-500" />
+              <span className="w-1 h-1 rounded-full bg-slate-400 dark:bg-slate-500" />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (widgetId === 'precious') {
+      const reserves = data.preciousAssets || [];
+      return (
+        <div key="precious" {...containerProps}>
+          {renderControls()}
+          <GlassCard hoverable onClick={() => setActiveTab('precious')} className="cursor-pointer flex flex-col justify-between h-full relative overflow-hidden pt-14 px-6 pb-6">
+            <div>
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                    <Coins className="h-3 w-3 text-amber-500" />
+                    Vault Reserves Value
+                  </h4>
+                  <h3 className="text-xl font-display font-black text-slate-900 dark:text-slate-100 mt-1">
+                    {formatCurrency(totalPreciousValue)}
+                  </h3>
+                </div>
+                <div className="text-[9px] bg-amber-500/10 text-amber-600 font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0">
+                  {reserves.length} Reserves
+                </div>
+              </div>
+
+              {reserves.length === 0 ? (
+                <div className="py-6 text-center text-xs text-slate-400 font-medium">
+                  No precious reserves added yet. Click to record ornaments or bars/coins.
+                </div>
+              ) : (
+                <div className="space-y-2 mt-4 max-h-[140px] overflow-y-auto pr-1">
+                  {reserves.slice(0, 3).map((asset, idx) => {
+                    const usdVal = calculatePreciousAssetUSD(asset, metalRates);
+                    const convertedVal = usdVal * exchangeRate;
+                    return (
+                      <div key={asset.id || idx} className="flex justify-between items-center p-2 rounded-xl bg-white/30 dark:bg-slate-800/20 border border-white/20 dark:border-white/5 hover:bg-white/50 transition-all text-xs">
+                        <div className="min-w-0 mr-2">
+                          <span className="font-bold text-slate-800 dark:text-slate-200 block truncate">{asset.name}</span>
+                          <span className="text-[9px] text-slate-500 block truncate">
+                            {asset.type} • {asset.weight} {asset.unit} {asset.karat ? `(${asset.karat})` : asset.purity ? `(${asset.purity})` : ''}
+                          </span>
+                        </div>
+                        <span className="font-mono font-bold text-slate-900 dark:text-slate-100 shrink-0">
+                          {formatCurrency(convertedVal)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                  {reserves.length > 3 && (
+                    <p className="text-[9px] font-bold text-indigo-600 dark:text-indigo-400 text-center uppercase tracking-wide mt-1">
+                      + {reserves.length - 3} more precious reserves
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="mt-4 pt-3 border-t border-slate-200/20 flex justify-between items-center text-[10px] font-semibold text-indigo-800 dark:text-indigo-400">
+              <span className="uppercase tracking-wider">Gold, Silver & Gems Vault</span>
+              <button 
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setActiveTab('precious'); }}
+                className="flex items-center gap-0.5 hover:underline text-indigo-600 dark:text-indigo-300 font-bold cursor-pointer bg-transparent border-none p-0"
+              >
+                Unlock Vault <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </GlassCard>
+          {/* Resize drag handle */}
+          <div 
+            onMouseDown={(e) => handleResizeStart(e, 'precious')}
             className="absolute top-0 right-0 bottom-0 w-3 cursor-col-resize group-hover/widget:bg-indigo-500/5 hover:bg-indigo-500/15 active:bg-indigo-600/25 transition-colors z-20 rounded-r-3xl hidden md:flex items-center justify-center"
             title="Drag right edge to resize"
           >
@@ -892,9 +1065,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, setActiveTab
             </div>
             <div className="mt-4 pt-3 border-t border-slate-200/20 flex justify-between items-center text-[10px] font-semibold text-indigo-800 dark:text-indigo-400">
               <span className="uppercase tracking-wider">Property & Land Holdings</span>
-              <span className="flex items-center gap-0.5 hover:underline">
+              <button 
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setActiveTab('terrafirma'); }}
+                className="flex items-center gap-0.5 hover:underline text-indigo-600 dark:text-indigo-300 font-bold cursor-pointer bg-transparent border-none p-0"
+              >
                 View Inventory <ChevronRight className="h-3.5 w-3.5" />
-              </span>
+              </button>
             </div>
           </GlassCard>
           {/* Resize drag handle */}
@@ -981,10 +1158,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, setActiveTab
               )}
             </div>
             <div className="mt-4 pt-3 border-t border-slate-200/20 flex justify-between items-center text-[10px] font-semibold text-indigo-800 dark:text-indigo-400">
-              <span className="uppercase tracking-wider">Premium Burden: {formatCurrency(totalMonthlyPremium)} / mo</span>
-              <span className="flex items-center gap-0.5 hover:underline">
+              <span className="uppercase tracking-wider truncate mr-1">Premium Burden: {formatCurrency(totalMonthlyPremium)}/mo</span>
+              <button 
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setActiveTab('insurances'); }}
+                className="flex items-center gap-0.5 hover:underline text-indigo-600 dark:text-indigo-300 font-bold cursor-pointer bg-transparent border-none p-0 shrink-0"
+              >
                 View Policies <ChevronRight className="h-3.5 w-3.5" />
-              </span>
+              </button>
             </div>
           </GlassCard>
           {/* Resize drag handle */}
@@ -1026,45 +1207,53 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, setActiveTab
       </div>
 
       {/* Overview Cards Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         {/* Net Worth Card */}
-        <GlassCard className="col-span-1 sm:col-span-2 lg:col-span-3 xl:col-span-1 bg-gradient-to-br from-indigo-500/20 to-violet-500/10 border-indigo-200/30 flex flex-col justify-between">
+        <GlassCard className="col-span-1 sm:col-span-2 lg:col-span-3 xl:col-span-1 bg-gradient-to-br from-indigo-500/20 to-violet-500/10 border-indigo-200/30 flex flex-col justify-between p-5 min-h-[145px]">
           <div>
-            <div className="flex justify-between items-start">
-              <div>
-                <span className="text-slate-500 dark:text-slate-300 text-[10px] font-bold tracking-wider uppercase">Net Portfolio Value</span>
-                <h2 className="text-3xl font-display font-bold text-slate-900 dark:text-slate-100 mt-1">{formatCurrency(totalPortfolioValue)}</h2>
-              </div>
-              <div className="p-2.5 bg-indigo-500/15 rounded-xl border border-indigo-500/20 text-indigo-700 shrink-0">
-                <TrendingUp className="h-5 w-5" />
+            <div className="flex justify-between items-center">
+              <span className="text-slate-500 dark:text-slate-300 text-[10px] font-bold tracking-wider uppercase truncate mr-1">Net Portfolio Value</span>
+              <div className="p-2 bg-indigo-500/15 rounded-xl border border-indigo-500/20 text-indigo-700 dark:text-indigo-300 shrink-0">
+                <TrendingUp className="h-4 w-4" />
               </div>
             </div>
+            <div className="mt-4">
+              <h2 className="text-2xl font-display font-black text-slate-900 dark:text-slate-100 tracking-tight truncate" title={formatCurrency(totalPortfolioValue)}>
+                {formatCurrency(totalPortfolioValue)}
+              </h2>
+            </div>
           </div>
-          <div className="flex items-center gap-2 mt-4 text-[10px] font-medium font-sans">
-            <span className={`flex items-center gap-0.5 px-2 py-0.5 rounded-full font-bold ${overallProfit >= 0 ? 'bg-emerald-500/20 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-rose-500/20 text-rose-800 dark:bg-rose-500/10 dark:text-rose-300'}`}>
+          <div className="flex items-center gap-2 mt-4 text-[10px] font-medium font-sans pt-2 border-t border-slate-200/10">
+            <span className={`flex items-center gap-0.5 px-2 py-0.5 rounded-full font-bold shrink-0 ${overallProfit >= 0 ? 'bg-emerald-500/20 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-rose-500/20 text-rose-800 dark:bg-rose-500/10 dark:text-rose-300'}`}>
               {overallProfit >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
               {overallProfit >= 0 ? '+' : ''}{overallProfitPercent.toFixed(1)}%
             </span>
-            <span className="text-slate-500 dark:text-slate-400 truncate">Returns: {formatCurrency(overallProfit)}</span>
+            <span className="text-slate-500 dark:text-slate-400 truncate" title={`Returns: ${formatCurrency(overallProfit)}`}>
+              Ret: {formatCurrency(overallProfit)}
+            </span>
           </div>
         </GlassCard>
 
         {/* Bank Savings Card */}
-        <GlassCard hoverable onClick={() => setActiveTab('savings')} className="cursor-pointer flex flex-col justify-between">
-          <div className="flex justify-between items-start">
-            <div>
-              <span className="text-slate-500 dark:text-slate-300 text-[10px] font-bold tracking-wider uppercase">Bank Savings</span>
-              <h3 className="text-2xl font-display font-bold text-slate-900 dark:text-slate-100 mt-1">{formatCurrency(totalSavings)}</h3>
+        <GlassCard hoverable onClick={() => setActiveTab('savings')} className="cursor-pointer flex flex-col justify-between p-5 min-h-[145px]">
+          <div>
+            <div className="flex justify-between items-center">
+              <span className="text-slate-500 dark:text-slate-300 text-[10px] font-bold tracking-wider uppercase truncate mr-1">Bank Savings</span>
+              <div className="p-2 bg-sky-500/15 rounded-xl text-sky-700 dark:text-sky-350 shrink-0">
+                <Landmark className="h-4 w-4" />
+              </div>
             </div>
-            <div className="p-2.5 bg-sky-500/15 rounded-xl text-sky-700 shrink-0">
-              <Landmark className="h-5 w-5" />
+            <div className="mt-4">
+              <h3 className="text-2xl font-display font-black text-slate-900 dark:text-slate-100 tracking-tight truncate" title={formatCurrency(totalSavings)}>
+                {formatCurrency(totalSavings)}
+              </h3>
             </div>
           </div>
           <div className="flex items-center justify-between mt-4 text-[10px] text-slate-500 pt-2 border-t border-slate-200/20 font-medium font-sans">
-            <span>{data.bankSavings.length} Accounts</span>
+            <span className="truncate">{data.bankSavings.length} Accounts</span>
             <span 
               onClick={(e) => { e.stopPropagation(); setActiveTab('savings'); }}
-              className="font-bold text-indigo-850 dark:text-indigo-300 flex items-center hover:underline cursor-pointer"
+              className="font-bold text-indigo-850 dark:text-indigo-300 flex items-center hover:underline cursor-pointer shrink-0"
             >
               Manage <ChevronRight className="h-3 w-3" />
             </span>
@@ -1072,21 +1261,25 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, setActiveTab
         </GlassCard>
 
         {/* Fixed Deposits Card */}
-        <GlassCard hoverable onClick={() => setActiveTab('deposits')} className="cursor-pointer flex flex-col justify-between">
-          <div className="flex justify-between items-start">
-            <div>
-              <span className="text-slate-500 dark:text-slate-300 text-[10px] font-bold tracking-wider uppercase">Fixed Deposits</span>
-              <h3 className="text-2xl font-display font-bold text-slate-900 dark:text-slate-100 mt-1">{formatCurrency(totalFDValue)}</h3>
+        <GlassCard hoverable onClick={() => setActiveTab('deposits')} className="cursor-pointer flex flex-col justify-between p-5 min-h-[145px]">
+          <div>
+            <div className="flex justify-between items-center">
+              <span className="text-slate-500 dark:text-slate-300 text-[10px] font-bold tracking-wider uppercase truncate mr-1">Fixed Deposits</span>
+              <div className="p-2 bg-amber-500/15 rounded-xl text-amber-700 dark:text-amber-350 shrink-0">
+                <RupeeCoin className="h-4 w-4" />
+              </div>
             </div>
-            <div className="p-2.5 bg-amber-500/15 rounded-xl text-amber-700 shrink-0">
-              <RupeeCoin className="h-5 w-5" />
+            <div className="mt-4">
+              <h3 className="text-2xl font-display font-black text-slate-900 dark:text-slate-100 tracking-tight truncate" title={formatCurrency(totalFDValue)}>
+                {formatCurrency(totalFDValue)}
+              </h3>
             </div>
           </div>
           <div className="flex items-center justify-between mt-4 text-[10px] text-slate-500 pt-2 border-t border-slate-200/20 font-medium font-sans">
-            <span>{data.fixedDeposits.length} Active CDs</span>
+            <span className="truncate">{data.fixedDeposits.length} Active CDs</span>
             <span 
               onClick={(e) => { e.stopPropagation(); setActiveTab('deposits'); }}
-              className="font-bold text-indigo-850 dark:text-indigo-300 flex items-center hover:underline cursor-pointer"
+              className="font-bold text-indigo-850 dark:text-indigo-300 flex items-center hover:underline cursor-pointer shrink-0"
             >
               Manage <ChevronRight className="h-3 w-3" />
             </span>
@@ -1094,40 +1287,74 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, setActiveTab
         </GlassCard>
 
         {/* Landed Estates Card */}
-        <GlassCard hoverable onClick={() => setActiveTab('terrafirma')} className="cursor-pointer flex flex-col justify-between">
-          <div className="flex justify-between items-start">
-            <div>
-              <span className="text-slate-500 dark:text-slate-300 text-[10px] font-bold tracking-wider uppercase">Landed Estates</span>
-              <h3 className="text-2xl font-display font-bold text-slate-900 dark:text-slate-100 mt-1">{formatCurrency(totalLandedEstates)}</h3>
+        <GlassCard hoverable onClick={() => setActiveTab('terrafirma')} className="cursor-pointer flex flex-col justify-between p-5 min-h-[145px]">
+          <div>
+            <div className="flex justify-between items-center">
+              <span className="text-slate-500 dark:text-slate-300 text-[10px] font-bold tracking-wider uppercase truncate mr-1">Landed Estates</span>
+              <div className="p-2 bg-pink-500/15 rounded-xl text-pink-750 dark:text-pink-350 shrink-0">
+                <Building2 className="h-4 w-4" />
+              </div>
             </div>
-            <div className="p-2.5 bg-pink-500/15 rounded-xl text-pink-750 shrink-0">
-              <Building2 className="h-5 w-5" />
+            <div className="mt-4">
+              <h3 className="text-2xl font-display font-black text-slate-900 dark:text-slate-100 tracking-tight truncate" title={formatCurrency(totalLandedEstates)}>
+                {formatCurrency(totalLandedEstates)}
+              </h3>
             </div>
           </div>
           <div className="flex items-center justify-between mt-4 text-[10px] text-slate-500 pt-2 border-t border-slate-200/20 font-medium font-sans">
-            <span>{(data.immovableAssets || []).length} Holdings</span>
+            <span className="truncate">{(data.immovableAssets || []).length} Holdings</span>
             <span 
               onClick={(e) => { e.stopPropagation(); setActiveTab('terrafirma'); }}
-              className="font-bold text-indigo-850 dark:text-indigo-300 flex items-center hover:underline cursor-pointer"
+              className="font-bold text-indigo-850 dark:text-indigo-300 flex items-center hover:underline cursor-pointer shrink-0"
             >
               Manage <ChevronRight className="h-3 w-3" />
             </span>
           </div>
         </GlassCard>
 
-        {/* InsureShield Card */}
-        <GlassCard hoverable onClick={() => setActiveTab('insurances')} className="cursor-pointer flex flex-col justify-between">
-          <div className="flex justify-between items-start">
-            <div>
-              <span className="text-slate-500 dark:text-slate-300 text-[10px] font-bold tracking-wider uppercase">Active Coverage</span>
-              <h3 className="text-2xl font-display font-bold text-slate-900 dark:text-slate-100 mt-1">{formatCurrency(totalInsuranceCover)}</h3>
+        {/* Gold & Ornaments Card */}
+        <GlassCard hoverable onClick={() => setActiveTab('precious')} className="cursor-pointer flex flex-col justify-between p-5 min-h-[145px]">
+          <div>
+            <div className="flex justify-between items-center">
+              <span className="text-slate-500 dark:text-slate-300 text-[10px] font-bold tracking-wider uppercase truncate mr-1">Gold & Ornaments</span>
+              <div className="p-2 bg-yellow-500/15 rounded-xl text-yellow-700 dark:text-yellow-350 shrink-0">
+                <Coins className="h-4 w-4 text-yellow-600 animate-pulse" />
+              </div>
             </div>
-            <div className="p-2.5 bg-emerald-500/15 rounded-xl text-emerald-700 shrink-0">
-              <ShieldCheck className="h-5 w-5" />
+            <div className="mt-4">
+              <h3 className="text-2xl font-display font-black text-slate-900 dark:text-slate-100 tracking-tight truncate" title={formatCurrency(totalPreciousValue)}>
+                {formatCurrency(totalPreciousValue)}
+              </h3>
             </div>
           </div>
           <div className="flex items-center justify-between mt-4 text-[10px] text-slate-500 pt-2 border-t border-slate-200/20 font-medium font-sans">
-            <span className="truncate">Monthly: {formatCurrency(totalMonthlyPremium)}</span>
+            <span className="truncate">{(data.preciousAssets || []).length} Reserves</span>
+            <span 
+              onClick={(e) => { e.stopPropagation(); setActiveTab('precious'); }}
+              className="font-bold text-indigo-850 dark:text-indigo-300 flex items-center hover:underline cursor-pointer shrink-0"
+            >
+              Vault <ChevronRight className="h-3 w-3" />
+            </span>
+          </div>
+        </GlassCard>
+
+        {/* InsureShield Card */}
+        <GlassCard hoverable onClick={() => setActiveTab('insurances')} className="cursor-pointer flex flex-col justify-between p-5 min-h-[145px]">
+          <div>
+            <div className="flex justify-between items-center">
+              <span className="text-slate-500 dark:text-slate-300 text-[10px] font-bold tracking-wider uppercase truncate mr-1">Active Coverage</span>
+              <div className="p-2 bg-emerald-500/15 rounded-xl text-emerald-700 dark:text-emerald-350 shrink-0">
+                <ShieldCheck className="h-4 w-4" />
+              </div>
+            </div>
+            <div className="mt-4">
+              <h3 className="text-2xl font-display font-black text-slate-900 dark:text-slate-100 tracking-tight truncate" title={formatCurrency(totalInsuranceCover)}>
+                {formatCurrency(totalInsuranceCover)}
+              </h3>
+            </div>
+          </div>
+          <div className="flex items-center justify-between mt-4 text-[10px] text-slate-500 pt-2 border-t border-slate-200/20 font-medium font-sans">
+            <span className="truncate">Prem: {formatCurrency(totalMonthlyPremium)}/mo</span>
             <span 
               onClick={(e) => { e.stopPropagation(); setActiveTab('insurances'); }}
               className="font-bold text-indigo-850 dark:text-indigo-300 flex items-center hover:underline cursor-pointer shrink-0"

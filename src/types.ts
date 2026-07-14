@@ -43,15 +43,37 @@ export interface UserProfile {
   avatarColor: string; // Tailwind class background
 }
 
+export interface PreciousAsset {
+  id: string;
+  name: string; // e.g. "Bridal Gold Necklace", "Heritage Diamond Ring"
+  type: 'Gold' | 'Silver' | 'Platinum' | 'Diamond' | 'Other';
+  weight: number; // weight or amount
+  unit: 'grams' | 'kilograms' | 'pavun' | 'carats'; // pavun/sovereign = 8g, carats for diamonds
+  karat?: '24K' | '22K' | '18K' | '14K'; // Gold purity
+  purity?: 'Fine 99.9%' | 'Sterling 92.5%' | 'Other'; // Silver purity
+  diamondSpecifics?: {
+    caratWeight?: number;
+    cut?: 'Round' | 'Princess' | 'Emerald' | 'Cushion' | 'Oval' | 'Other';
+    clarity?: 'FL' | 'IF' | 'VVS1' | 'VVS2' | 'VS1' | 'VS2' | 'SI1' | 'SI2' | 'I1';
+    color?: 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'Other';
+    diamondType?: 'Natural' | 'Lab-Grown' | 'Other';
+  };
+  purchasePrice?: number; // what they bought it for
+  purchaseCurrency?: CurrencyCode;
+  notes?: string;
+  ownerIds: string[];
+}
+
 export interface AssetData {
   bankSavings: BankAccount[];
   fixedDeposits: FixedDeposit[];
   mutualFunds: MutualFund[];
   immovableAssets: ImmovableAsset[];
   insurances: InsurancePolicy[];
+  preciousAssets?: PreciousAsset[]; // Vault Reserves
 }
 
-export type TabType = 'dashboard' | 'savings' | 'deposits' | 'funds' | 'terrafirma' | 'insurances' | 'account';
+export type TabType = 'dashboard' | 'savings' | 'deposits' | 'funds' | 'terrafirma' | 'insurances' | 'precious' | 'account';
 
 export interface ImmovableAsset {
   id: string;

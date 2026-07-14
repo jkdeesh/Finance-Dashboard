@@ -39,6 +39,22 @@ export function MaxAssistant({ assetData, currency, portfolios }: MaxAssistantPr
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
+  const [dragConstraints, setDragConstraints] = useState({ left: -800, right: 20, top: -600, bottom: 20 });
+  
+  useEffect(() => {
+    const handleResize = () => {
+      setDragConstraints({
+        left: -window.innerWidth + 180,
+        right: 20,
+        top: -window.innerHeight + 180,
+        bottom: 20
+      });
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const suggestions = [
@@ -126,10 +142,14 @@ export function MaxAssistant({ assetData, currency, portfolios }: MaxAssistantPr
           <motion.button
             id="max-toggle-btn"
             layoutId="max-chat-box"
+            drag
+            dragConstraints={dragConstraints}
+            dragElastic={0.1}
+            dragMomentum={false}
             onClick={() => setIsOpen(true)}
-            whileHover={{ scale: 1.05, y: -2 }}
+            whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="flex items-center gap-2 px-4 py-3.5 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-full shadow-2xl hover:from-indigo-500 hover:to-indigo-650 cursor-pointer transition-all duration-200 border border-white/10"
+            className="flex items-center gap-2 px-4 py-3.5 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-full shadow-2xl hover:from-indigo-500 hover:to-indigo-650 cursor-grab active:cursor-grabbing transition-opacity duration-300 border border-white/10 opacity-30 hover:opacity-100 focus:opacity-100 select-none touch-none"
           >
             <div className="relative">
               <Bot className="h-5 w-5 animate-pulse" />

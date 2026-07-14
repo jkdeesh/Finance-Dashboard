@@ -13,6 +13,7 @@ import {
   UserProfile,
   ImmovableAsset,
   InsurancePolicy,
+  PreciousAsset,
   safeRandomUUID
 } from './types';
 import { DashboardView } from './components/DashboardView';
@@ -21,9 +22,11 @@ import { FixedDepositsView } from './components/FixedDepositsView';
 import { MutualFundsView } from './components/MutualFundsView';
 import { LandedEstatesView } from './components/LandedEstatesView';
 import { InsureShieldView } from './components/InsureShieldView';
+import { PreciousReservesView } from './components/PreciousReservesView';
 import { MaxAssistant } from './components/MaxAssistant';
 import { FullPageLoginView } from './components/FullPageLoginView';
 import { AccountTabView } from './components/AccountTabView';
+import { fetchMarketRates, calculatePreciousAssetUSD } from './services/marketRates';
 import { 
   LayoutDashboard, 
   PiggyBank, 
@@ -58,7 +61,8 @@ import {
   Bot,
   Sparkles,
   Send,
-  MessageSquare
+  MessageSquare,
+  Coins
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -317,6 +321,62 @@ const DEMO_ASSET_DATA: AssetData = {
       currency: 'INR',
       ownerIds: ['aditya', 'nisha']
     }
+  ],
+  preciousAssets: [
+    {
+      id: 'prec-1',
+      name: 'Bridal Gold Choker & Bangles Set',
+      type: 'Gold',
+      weight: 12,
+      unit: 'pavun',
+      karat: '22K',
+      purchasePrice: 520000,
+      purchaseCurrency: 'INR',
+      notes: 'Ancestral wedding gold jewelry stored in bank locker.',
+      ownerIds: ['nisha']
+    },
+    {
+      id: 'prec-2',
+      name: 'Solid 24K Gold Minted Bars',
+      type: 'Gold',
+      weight: 100,
+      unit: 'grams',
+      karat: '24K',
+      purchasePrice: 6200,
+      purchaseCurrency: 'USD',
+      notes: 'Vault reserve bullion investment.',
+      ownerIds: ['aditya']
+    },
+    {
+      id: 'prec-3',
+      name: 'Natural Princess Cut Certified Diamond Ring',
+      type: 'Diamond',
+      weight: 1.8,
+      unit: 'carats',
+      diamondSpecifics: {
+        caratWeight: 1.8,
+        cut: 'Princess',
+        clarity: 'VVS1',
+        color: 'E',
+        diamondType: 'Natural'
+      },
+      purchasePrice: 1250000,
+      purchaseCurrency: 'INR',
+      notes: 'Anniversary precious ornament gift.',
+      ownerIds: ['aditya', 'nisha']
+    },
+    {
+      id: 'prec-4',
+      name: 'Sterling Silver Family Utensils Set',
+      type: 'Silver',
+      weight: 2.5,
+      unit: 'kilograms',
+      purity: 'Sterling 92.5%',
+      purchasePrice: 210000,
+      purchaseCurrency: 'INR',
+      notes: 'Vintage family dining silver artifacts.',
+      ownerIds: ['nisha']
+    }
   ]
 };
 
@@ -375,13 +435,14 @@ export default function App() {
   });
 
   const ensureIdsExist = (data: any): AssetData => {
-    if (!data) return { bankSavings: [], fixedDeposits: [], mutualFunds: [], immovableAssets: [], insurances: [] };
+    if (!data) return { bankSavings: [], fixedDeposits: [], mutualFunds: [], immovableAssets: [], insurances: [], preciousAssets: [] };
     return {
       bankSavings: (data.bankSavings || []).map((x: any) => ({ ...x, id: x.id || safeRandomUUID() })),
       fixedDeposits: (data.fixedDeposits || []).map((x: any) => ({ ...x, id: x.id || safeRandomUUID() })),
       mutualFunds: (data.mutualFunds || []).map((x: any) => ({ ...x, id: x.id || safeRandomUUID() })),
       immovableAssets: (data.immovableAssets || []).map((x: any) => ({ ...x, id: x.id || safeRandomUUID() })),
-      insurances: (data.insurances || []).map((x: any) => ({ ...x, id: x.id || safeRandomUUID() }))
+      insurances: (data.insurances || []).map((x: any) => ({ ...x, id: x.id || safeRandomUUID() })),
+      preciousAssets: (data.preciousAssets || []).map((x: any) => ({ ...x, id: x.id || safeRandomUUID() }))
     };
   };
 
@@ -399,7 +460,8 @@ export default function App() {
           fixedDeposits: [],
           mutualFunds: [],
           immovableAssets: [],
-          insurances: []
+          insurances: [],
+          preciousAssets: []
         };
       }
       return ensureIdsExist(DEMO_ASSET_DATA);
@@ -456,6 +518,25 @@ export default function App() {
       console.error('Failed to toggle dark class on documentElement', e);
     }
   }, [isDarkMode]);
+
+  // --- MARKET RATES & PRECIOUS VAULT STATE ---
+  const [marketRates, setMarketRates] = useState<any>(null);
+
+  const loadMarketRates = async () => {
+    try {
+      const rates = await fetchMarketRates();
+      setMarketRates(rates);
+    } catch (e) {
+      console.warn('Failed to load market rates', e);
+    }
+  };
+
+  useEffect(() => {
+    loadMarketRates();
+    // Refresh rates every 15 minutes in session if needed
+    const interval = setInterval(loadMarketRates, 15 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMobileUserMenuOpen, setIsMobileUserMenuOpen] = useState(false);
@@ -578,7 +659,8 @@ export default function App() {
           fixedDeposits: [],
           mutualFunds: [],
           immovableAssets: [],
-          insurances: []
+          insurances: [],
+          preciousAssets: []
         });
       }
       setLoadedEmail(loggedInAccount.email);
@@ -590,7 +672,8 @@ export default function App() {
         fixedDeposits: [],
         mutualFunds: [],
         immovableAssets: [],
-        insurances: []
+        insurances: [],
+        preciousAssets: []
       });
       setLoadedEmail('');
       setProfilePic(SILHOUETTES.man);
@@ -845,7 +928,7 @@ export default function App() {
   const handleEditInsurance = (edited: InsurancePolicy) => {
     const updated = {
       ...assetData,
-      insurances: (assetData.insurances || []).map(i => i.id === edited.id ? edited : i)
+      insurances: (assetData.insurances || []).map(p => p.id === edited.id ? edited : p)
     };
     setAssetData(updated);
     saveToLocalStorage(updated);
@@ -854,7 +937,35 @@ export default function App() {
   const handleDeleteInsurance = (id: string) => {
     const updated = {
       ...assetData,
-      insurances: (assetData.insurances || []).filter(i => i.id !== id)
+      insurances: (assetData.insurances || []).filter(p => p.id !== id)
+    };
+    setAssetData(updated);
+    saveToLocalStorage(updated);
+  };
+
+  // --- VAULT RESERVES CONTROLLERS ---
+  const handleAddPreciousAsset = (asset: PreciousAsset) => {
+    const updated = {
+      ...assetData,
+      preciousAssets: [...(assetData.preciousAssets || []), asset]
+    };
+    setAssetData(updated);
+    saveToLocalStorage(updated);
+  };
+
+  const handleEditPreciousAsset = (edited: PreciousAsset) => {
+    const updated = {
+      ...assetData,
+      preciousAssets: (assetData.preciousAssets || []).map(a => a.id === edited.id ? edited : a)
+    };
+    setAssetData(updated);
+    saveToLocalStorage(updated);
+  };
+
+  const handleDeletePreciousAsset = (id: string) => {
+    const updated = {
+      ...assetData,
+      preciousAssets: (assetData.preciousAssets || []).filter(a => a.id !== id)
     };
     setAssetData(updated);
     saveToLocalStorage(updated);
@@ -876,15 +987,38 @@ export default function App() {
       mutualFunds: assetData.mutualFunds.filter(isVisible),
       immovableAssets: (assetData.immovableAssets || []).filter(isVisible),
       insurances: (assetData.insurances || []).filter(isVisible),
+      preciousAssets: (assetData.preciousAssets || []).filter(isVisible),
     };
   }, [assetData, selectedUserIds]);
+
+  const preciousAssetUSDTotal = useMemo(() => {
+    const metalRates = marketRates?.metalRates || {
+      gold24k: 78.50,
+      gold22k: 72.00,
+      gold18k: 58.80,
+      gold14k: 45.80,
+      silver999: 0.98,
+      silver925: 0.91,
+      platinum: 32.50,
+      diamondBase: 4500.00
+    };
+    return (filteredAssetData.preciousAssets || []).reduce((sum, item) => {
+      return sum + calculatePreciousAssetUSD(item, metalRates);
+    }, 0);
+  }, [filteredAssetData.preciousAssets, marketRates]);
+
+  const preciousAssetSelectedCurrencyTotal = useMemo(() => {
+    const rate = marketRates?.exchangeRates?.[selectedCurrency] || (selectedCurrency === 'INR' ? 83.5 : 1);
+    return preciousAssetUSDTotal * rate;
+  }, [preciousAssetUSDTotal, selectedCurrency, marketRates]);
 
   // Calculate high-level stats for visual markers
   const totalBalance = 
     filteredAssetData.bankSavings.reduce((sum, item) => sum + convertCurrency(item.balance, item.currency || 'INR', selectedCurrency), 0) +
     filteredAssetData.fixedDeposits.reduce((sum, item) => sum + convertCurrency(item.principal, item.currency || 'INR', selectedCurrency), 0) +
     filteredAssetData.mutualFunds.reduce((sum, item) => sum + convertCurrency(item.units * item.currentNav, item.currency || 'INR', selectedCurrency), 0) +
-    filteredAssetData.immovableAssets.reduce((sum, item) => sum + convertCurrency(item.estimatedValue, item.currency || 'INR', selectedCurrency), 0);
+    filteredAssetData.immovableAssets.reduce((sum, item) => sum + convertCurrency(item.estimatedValue, item.currency || 'INR', selectedCurrency), 0) +
+    preciousAssetSelectedCurrencyTotal;
 
   // Tabs layout configs
   const tabs = [
@@ -893,6 +1027,7 @@ export default function App() {
     { id: 'deposits' as TabType, label: 'Fixed Deposits', icon: RupeeCoin },
     { id: 'funds' as TabType, label: 'Mutual Funds', icon: TrendingUp },
     { id: 'terrafirma' as TabType, label: 'Landed Estates', icon: Home },
+    { id: 'precious' as TabType, label: 'Gold & Ornaments', icon: Coins },
     { id: 'insurances' as TabType, label: 'InsureShield', icon: Shield },
     { id: 'account' as TabType, label: 'Accounts', icon: User },
   ];
@@ -983,10 +1118,10 @@ export default function App() {
         <>
  
       {/* --- DESKTOP SIDEBAR --- */}
-      <aside className="hidden lg:flex flex-col w-60 lg:mr-6 glass-panel shrink-0 border border-white/20 h-full z-30 p-5 text-slate-800 dark:text-slate-100 isolate transform-gpu">
+      <aside className="hidden lg:flex flex-col w-[225px] lg:mr-4 glass-panel shrink-0 border border-white/20 h-full z-30 p-4 text-slate-800 dark:text-slate-100 isolate transform-gpu">
         
         {/* User Account Header */}
-        <div className="flex items-center gap-3 pb-6 border-b border-slate-200/20 mb-8 relative">
+        <div className="flex items-center gap-3 pb-4 border-b border-slate-200/20 mb-5 relative">
           <div className="relative group shrink-0">
             <button
               type="button"
@@ -1020,7 +1155,7 @@ export default function App() {
         </div>
 
         {/* Navigation Tabs */}
-        <nav className="space-y-1.5 flex-1 text-sm font-medium">
+        <nav className="space-y-1 flex-1 text-[13px] font-medium">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -1029,7 +1164,7 @@ export default function App() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 // 'relative' is essential here so the highlight stays locked to the button
-                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-colors cursor-pointer relative group ${
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors cursor-pointer relative group text-left ${
                   isActive 
                     ? 'text-indigo-950 dark:text-indigo-100 font-bold' 
                     : 'text-slate-600 dark:text-slate-350 hover:text-slate-900 dark:hover:text-white hover:bg-white/20 dark:hover:bg-white/10'
@@ -1046,9 +1181,9 @@ export default function App() {
                   />
                 )}
                 
-                <span className="flex items-center gap-3 relative z-10">
-                  <Icon className={`h-4 w-4 ${isActive ? 'text-indigo-600 dark:text-indigo-300' : 'text-slate-500 group-hover:text-slate-700'}`} />
-                  {tab.label}
+                <span className="flex items-center gap-2.5 relative z-10 whitespace-nowrap min-w-0 flex-1 text-left">
+                  <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-indigo-600 dark:text-indigo-300' : 'text-slate-500 group-hover:text-slate-700'}`} />
+                  <span className="truncate">{tab.label}</span>
                 </span>
 
                 {/* Micro numerical indicator */}
@@ -1077,13 +1212,18 @@ export default function App() {
                     {filteredAssetData.insurances.length}
                   </span>
                 )}
+                {tab.id === 'precious' && (
+                  <span className="relative z-10 text-[10px] font-mono bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 px-1.5 py-0.5 rounded">
+                    {(filteredAssetData.preciousAssets || []).length}
+                  </span>
+                )}
               </button>
             );
           })}
         </nav>
 
         {/* Currency Selector */}
-        <div className="mt-5 pt-5 border-t border-slate-200/20 text-xs">
+        <div className="mt-4 pt-4 border-t border-slate-200/20 text-xs">
           <label className="block text-slate-700 dark:text-slate-300 font-bold uppercase tracking-wider text-[9px] mb-2">
             Base Portfolio Currency
           </label>
@@ -1108,7 +1248,7 @@ export default function App() {
         </div>
 
         {/* Appearance Mode Selector */}
-        <div className="mt-4 text-xs">
+        <div className="mt-3 text-xs">
           <label className="block text-slate-700 dark:text-slate-300 font-bold uppercase tracking-wider text-[9px] mb-2">
             Appearance Mode
           </label>
@@ -1141,7 +1281,7 @@ export default function App() {
         </div>
 
         {/* Workspace Wallpaper Selector */}
-        <div className="my-4 text-xs relative">
+        <div className="my-3 text-xs relative">
           <label className="block text-slate-700 dark:text-slate-300 font-bold uppercase tracking-wider text-[9px] mb-2">
             Background
           </label>
@@ -1250,7 +1390,7 @@ export default function App() {
         </div>
 
         {/* Footer Profile */}
-        <div className="pt-6 border-t border-slate-200/20 text-xs relative">
+        <div className="pt-4 border-t border-slate-200/20 text-xs relative">
           {/* Accounts Popover Dropdown */}
           <AnimatePresence>
             {isUserMenuOpen && (
@@ -1266,7 +1406,7 @@ export default function App() {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute bottom-full left-0 right-0 mb-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl z-50 text-slate-800 dark:text-slate-100 min-w-[240px]"
+                  className="absolute bottom-full left-0 right-0 mb-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-3.5 shadow-xl z-50 text-slate-800 dark:text-slate-100 w-full"
                 >
                   <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800 mb-3">
                     <div>
@@ -1574,6 +1714,11 @@ export default function App() {
                         {tab.id === 'insurances' && (
                           <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${isActive ? 'bg-indigo-700 text-white' : 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300'}`}>
                             {filteredAssetData.insurances.length}
+                          </span>
+                        )}
+                        {tab.id === 'precious' && (
+                          <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${isActive ? 'bg-indigo-700 text-white' : 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300'}`}>
+                            {(filteredAssetData.preciousAssets || []).length}
                           </span>
                         )}
                       </button>
@@ -1912,7 +2057,7 @@ export default function App() {
             style={{ willChange: 'transform, opacity' }}
           >
             {activeTab === 'dashboard' && (
-              <DashboardView data={filteredAssetData} setActiveTab={setActiveTab} selectedCurrency={selectedCurrency} />
+              <DashboardView data={filteredAssetData} setActiveTab={setActiveTab} selectedCurrency={selectedCurrency} marketRates={marketRates} />
             )}
             {activeTab === 'savings' && (
               <BankSavingsView 
@@ -1967,6 +2112,19 @@ export default function App() {
                 selectedCurrency={selectedCurrency}
                 onBackToDashboard={() => setActiveTab('dashboard')}
                 selectedUserIds={selectedUserIds}
+              />
+            )}
+            {activeTab === 'precious' && (
+              <PreciousReservesView
+                assets={filteredAssetData.preciousAssets || []}
+                onAddAsset={handleAddPreciousAsset}
+                onEditAsset={handleEditPreciousAsset}
+                onDeleteAsset={handleDeletePreciousAsset}
+                selectedCurrency={selectedCurrency}
+                onBackToDashboard={() => setActiveTab('dashboard')}
+                selectedUserIds={selectedUserIds}
+                marketRates={marketRates}
+                onRefreshRates={loadMarketRates}
               />
             )}
             {activeTab === 'account' && (
