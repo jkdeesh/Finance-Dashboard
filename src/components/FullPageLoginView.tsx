@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Lock, LogIn, User, Eye, EyeOff, ShieldAlert, Sparkles, RefreshCw } from 'lucide-react';
+import { Mail, Lock, LogIn, User, Eye, EyeOff, ShieldAlert, Sparkles, RefreshCw, Fingerprint, ShieldCheck, Check } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface RegisteredAccount {
@@ -58,6 +58,14 @@ export const FullPageLoginView: React.FC<FullPageLoginViewProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  // Security Verification States
+  const [verificationPendingAccount, setVerificationPendingAccount] = useState<{ email: string; name: string } | null>(null);
+  const [verificationMode, setVerificationMode] = useState<'none' | 'tfa' | 'biometric' | 'both'>('none');
+  const [currentVerificationStep, setCurrentVerificationStep] = useState<'none' | 'biometric' | 'tfa'>('none');
+  const [tfaCode, setTfaCode] = useState('');
+  const [expectedTfaCode, setExpectedTfaCode] = useState('');
+  const [biometricStatus, setBiometricStatus] = useState<'idle' | 'scanning' | 'success' | 'failed'>('idle');
 
   // Password Recovery States
   const [forgotEmail, setForgotEmail] = useState('');
@@ -272,6 +280,47 @@ export const FullPageLoginView: React.FC<FullPageLoginViewProps> = ({
             setDormantAccountToReactivate(matchedAccount);
             return;
           }
+
+          // Check if MFA/2FA or Biometrics is active for this account
+          const emailKey = matchedAccount.email.replace(/[^a-zA-Z0-9]/g, '_');
+          const tfaEnabled = localStorage.getItem(`asset_tracker_tfa_${emailKey}`) === 'true';
+          const bioEnabled = localStorage.getItem(`asset_tracker_biometric_${emailKey}`) === 'true';
+
+          if (tfaEnabled || bioEnabled) {
+            setVerificationPendingAccount({ email: matchedAccount.email, name: matchedAccount.name });
+            setTfaCode('');
+            
+            if (bioEnabled) {
+              setVerificationMode(tfaEnabled ? 'both' : 'biometric');
+              setCurrentVerificationStep('biometric');
+              setBiometricStatus('scanning');
+              
+              // Automatically simulate successful biometric scanning after 1.5s
+              setTimeout(() => {
+                setBiometricStatus('success');
+                setTimeout(() => {
+                  if (tfaEnabled) {
+                    setCurrentVerificationStep('tfa');
+                    const code = Math.floor(100000 + Math.random() * 900000).toString();
+                    setExpectedTfaCode(code);
+                    console.log(`[MFA SIMULATOR] 2FA Verification Code for ${matchedAccount.email}: ${code}`);
+                  } else {
+                    onLoginSuccess(matchedAccount.email, matchedAccount.name);
+                    setVerificationPendingAccount(null);
+                    setCurrentVerificationStep('none');
+                  }
+                }, 1000);
+              }, 1800);
+            } else {
+              setVerificationMode('tfa');
+              setCurrentVerificationStep('tfa');
+              const code = Math.floor(100000 + Math.random() * 900000).toString();
+              setExpectedTfaCode(code);
+              console.log(`[MFA SIMULATOR] 2FA Verification Code for ${matchedAccount.email}: ${code}`);
+            }
+            return;
+          }
+
           onLoginSuccess(matchedAccount.email, matchedAccount.name);
         } else {
           // Permissive email log-in for unsaved email accounts
@@ -468,7 +517,113 @@ export const FullPageLoginView: React.FC<FullPageLoginViewProps> = ({
           )}
 
           {/* Dormant Account Reactivation View */}
-          {dormantAccountToReactivate ? (
+          {verificationPendingAccount ? (
+            /* Multi-Factor & Biometric Security Verification Screen */
+            <div className="space-y-6 flex flex-col items-center py-4">
+              <div className="text-center">
+                <div className="inline-flex p-3 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-2xl mb-3">
+                  <ShieldCheck className="h-6 w-6 animate-pulse" />
+                </div>
+                <h3 className="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider">
+                  Security Verification
+                </h3>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 max-w-[280px] leading-relaxed">
+                  Protecting your financial records. Please verify your identity.
+                </p>
+              </div>
+
+              {currentVerificationStep === 'biometric' && (
+                <div className="flex flex-col items-center space-y-4 w-full">
+                  <div className="relative w-24 h-24 flex items-center justify-center">
+                    {/* Ripple effects */}
+                    {biometricStatus === 'scanning' && (
+                      <>
+                        <div className="absolute inset-0 bg-indigo-500/20 rounded-full animate-ping" />
+                        <div className="absolute inset-2 bg-indigo-500/15 rounded-full animate-pulse" />
+                      </>
+                    )}
+                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center border-2 transition-all ${
+                      biometricStatus === 'success' 
+                        ? 'bg-emerald-500/10 border-emerald-500 text-emerald-500 scale-105'
+                        : 'bg-indigo-500/5 border-indigo-500/30 text-indigo-500'
+                    }`}>
+                      {biometricStatus === 'success' ? (
+                        <Check className="h-8 w-8 stroke-[3]" />
+                      ) : (
+                        <Fingerprint className="h-8 w-8 stroke-[1.5] animate-pulse" />
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="text-center">
+                    <span className={`text-xs font-bold ${
+                      biometricStatus === 'success' ? 'text-emerald-500' : 'text-slate-700 dark:text-slate-350'
+                    }`}>
+                      {biometricStatus === 'scanning' && 'Touch ID / Face ID Scanning...'}
+                      {biometricStatus === 'success' && 'Biometrics Authenticated!'}
+                    </span>
+                    <p className="text-[9px] text-slate-400 mt-0.5">
+                      {biometricStatus === 'scanning' && 'Place your fingerprint on the sensor'}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {currentVerificationStep === 'tfa' && (
+                <div className="w-full space-y-4">
+                  <div className="space-y-1.5 text-center">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                      Enter 2FA Code
+                    </span>
+                    <p className="text-[9px] text-slate-400">
+                      Two-Factor Authentication is active. Enter the 6-digit code.
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <input
+                      type="text"
+                      maxLength={6}
+                      placeholder="------"
+                      value={tfaCode}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/[^0-9]/g, '');
+                        setTfaCode(val);
+                        if (val === expectedTfaCode || val === '123456') {
+                          setTimeout(() => {
+                            onLoginSuccess(verificationPendingAccount.email, verificationPendingAccount.name);
+                            // Reset state
+                            setVerificationPendingAccount(null);
+                            setCurrentVerificationStep('none');
+                            setTfaCode('');
+                          }, 600);
+                        }
+                      }}
+                      className="w-full tracking-[1.5em] text-center bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 border border-slate-200/60 dark:border-slate-800 rounded-xl py-3 text-lg font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition-all placeholder:tracking-normal placeholder:text-slate-300"
+                    />
+                  </div>
+
+                  <div className="p-3 bg-amber-500/5 border border-amber-500/10 rounded-2xl text-[9px] text-amber-600 dark:text-amber-400 font-semibold leading-relaxed">
+                    <p>
+                      💡 <span className="font-bold">MFA Simulator Active:</span> A 2FA code was logged to your browser console. Or, bypass using code <span className="underline font-bold text-amber-700 dark:text-amber-300">123456</span>.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  setVerificationPendingAccount(null);
+                  setCurrentVerificationStep('none');
+                  setError('Security verification cancelled');
+                }}
+                className="text-[10px] font-bold text-indigo-500 hover:underline hover:text-indigo-400 mt-2"
+              >
+                Cancel Sign In
+              </button>
+            </div>
+          ) : dormantAccountToReactivate ? (
             <div className="space-y-4 py-2">
               <div className="w-12 h-12 bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 rounded-2xl flex items-center justify-center mx-auto shadow-md border border-amber-200/50">
                 <ShieldAlert className="h-6 w-6" />

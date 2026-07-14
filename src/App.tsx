@@ -14,6 +14,7 @@ import {
   ImmovableAsset,
   InsurancePolicy,
   PreciousAsset,
+  Liability,
   safeRandomUUID
 } from './types';
 import { DashboardView } from './components/DashboardView';
@@ -23,12 +24,14 @@ import { MutualFundsView } from './components/MutualFundsView';
 import { LandedEstatesView } from './components/LandedEstatesView';
 import { InsureShieldView } from './components/InsureShieldView';
 import { PreciousReservesView } from './components/PreciousReservesView';
+import { LiabilityLedgerView } from './components/LiabilityLedgerView';
 import { MaxAssistant } from './components/MaxAssistant';
 import { FullPageLoginView } from './components/FullPageLoginView';
 import { AccountTabView } from './components/AccountTabView';
 import { fetchMarketRates, calculatePreciousAssetUSD } from './services/marketRates';
 import { 
   LayoutDashboard, 
+  CreditCard,
   PiggyBank, 
   Calendar, 
   BarChart4, 
@@ -213,7 +216,8 @@ const DEMO_ASSET_DATA: AssetData = {
       averageNav: 82.40,
       currentNav: 121.85,
       currency: 'INR',
-      ownerIds: ['aditya']
+      ownerIds: ['aditya'],
+      investmentType: 'SIP'
     },
     {
       id: 'mf-2',
@@ -223,7 +227,8 @@ const DEMO_ASSET_DATA: AssetData = {
       averageNav: 54.10,
       currentNav: 91.15,
       currency: 'INR',
-      ownerIds: ['aditya', 'nisha']
+      ownerIds: ['aditya', 'nisha'],
+      investmentType: 'SIP'
     },
     {
       id: 'mf-3',
@@ -233,7 +238,8 @@ const DEMO_ASSET_DATA: AssetData = {
       averageNav: 110.50,
       currentNav: 148.30,
       currency: 'INR',
-      ownerIds: ['nisha']
+      ownerIds: ['nisha'],
+      investmentType: 'Lumpsum'
     },
     {
       id: 'mf-4',
@@ -243,7 +249,8 @@ const DEMO_ASSET_DATA: AssetData = {
       averageNav: 95.00,
       currentNav: 112.75,
       currency: 'INR',
-      ownerIds: ['aditya']
+      ownerIds: ['aditya'],
+      investmentType: 'Lumpsum'
     }
   ],
   immovableAssets: [
@@ -377,6 +384,49 @@ const DEMO_ASSET_DATA: AssetData = {
       notes: 'Vintage family dining silver artifacts.',
       ownerIds: ['nisha']
     }
+  ],
+  liabilities: [
+    {
+      id: 'lia-1',
+      lenderName: 'SBI Home Finance',
+      liabilityType: 'Home Loan',
+      totalAmount: 4500000,
+      outstandingAmount: 3820000,
+      interestRate: 8.65,
+      monthlyPayment: 38500,
+      startDate: '2023-04-10',
+      endDate: '2043-04-10',
+      currency: 'INR',
+      notes: 'Bangalore flat mortgage loan',
+      ownerIds: ['aditya', 'nisha']
+    },
+    {
+      id: 'lia-2',
+      lenderName: 'HDFC Card Services',
+      liabilityType: 'Credit Card',
+      totalAmount: 500000,
+      outstandingAmount: 42500,
+      interestRate: 42.0,
+      monthlyPayment: 5000,
+      startDate: '2021-08-15',
+      currency: 'INR',
+      notes: 'Aditya primary premium card',
+      ownerIds: ['aditya']
+    },
+    {
+      id: 'lia-3',
+      lenderName: 'Chase Finance',
+      liabilityType: 'Car Loan',
+      totalAmount: 32000,
+      outstandingAmount: 18400,
+      interestRate: 5.45,
+      monthlyPayment: 520,
+      startDate: '2024-02-18',
+      endDate: '2029-02-18',
+      currency: 'USD',
+      notes: 'Car loan for US travel',
+      ownerIds: ['aditya']
+    }
   ]
 };
 
@@ -435,14 +485,15 @@ export default function App() {
   });
 
   const ensureIdsExist = (data: any): AssetData => {
-    if (!data) return { bankSavings: [], fixedDeposits: [], mutualFunds: [], immovableAssets: [], insurances: [], preciousAssets: [] };
+    if (!data) return { bankSavings: [], fixedDeposits: [], mutualFunds: [], immovableAssets: [], insurances: [], preciousAssets: [], liabilities: [] };
     return {
       bankSavings: (data.bankSavings || []).map((x: any) => ({ ...x, id: x.id || safeRandomUUID() })),
       fixedDeposits: (data.fixedDeposits || []).map((x: any) => ({ ...x, id: x.id || safeRandomUUID() })),
       mutualFunds: (data.mutualFunds || []).map((x: any) => ({ ...x, id: x.id || safeRandomUUID() })),
       immovableAssets: (data.immovableAssets || []).map((x: any) => ({ ...x, id: x.id || safeRandomUUID() })),
       insurances: (data.insurances || []).map((x: any) => ({ ...x, id: x.id || safeRandomUUID() })),
-      preciousAssets: (data.preciousAssets || []).map((x: any) => ({ ...x, id: x.id || safeRandomUUID() }))
+      preciousAssets: (data.preciousAssets || []).map((x: any) => ({ ...x, id: x.id || safeRandomUUID() })),
+      liabilities: (data.liabilities || []).map((x: any) => ({ ...x, id: x.id || safeRandomUUID() }))
     };
   };
 
@@ -461,7 +512,8 @@ export default function App() {
           mutualFunds: [],
           immovableAssets: [],
           insurances: [],
-          preciousAssets: []
+          preciousAssets: [],
+          liabilities: []
         };
       }
       return ensureIdsExist(DEMO_ASSET_DATA);
@@ -971,6 +1023,38 @@ export default function App() {
     saveToLocalStorage(updated);
   };
 
+  // --- LIABILITY CONTROLLERS ---
+  const handleAddLiability = (lia: Omit<Liability, 'id'> & { id?: string }) => {
+    const newLia: Liability = {
+      ...lia,
+      id: lia.id || safeRandomUUID()
+    };
+    const updated = {
+      ...assetData,
+      liabilities: [...(assetData.liabilities || []), newLia]
+    };
+    setAssetData(updated);
+    saveToLocalStorage(updated);
+  };
+
+  const handleEditLiability = (edited: Liability) => {
+    const updated = {
+      ...assetData,
+      liabilities: (assetData.liabilities || []).map(l => l.id === edited.id ? edited : l)
+    };
+    setAssetData(updated);
+    saveToLocalStorage(updated);
+  };
+
+  const handleDeleteLiability = (id: string) => {
+    const updated = {
+      ...assetData,
+      liabilities: (assetData.liabilities || []).filter(l => l.id !== id)
+    };
+    setAssetData(updated);
+    saveToLocalStorage(updated);
+  };
+
   const filteredAssetData = useMemo(() => {
     const isVisible = (item: { ownerIds?: string[] }) => {
       // If no ownerIds defined, show to everyone
@@ -988,6 +1072,7 @@ export default function App() {
       immovableAssets: (assetData.immovableAssets || []).filter(isVisible),
       insurances: (assetData.insurances || []).filter(isVisible),
       preciousAssets: (assetData.preciousAssets || []).filter(isVisible),
+      liabilities: (assetData.liabilities || []).filter(isVisible),
     };
   }, [assetData, selectedUserIds]);
 
@@ -1020,6 +1105,70 @@ export default function App() {
     filteredAssetData.immovableAssets.reduce((sum, item) => sum + convertCurrency(item.estimatedValue, item.currency || 'INR', selectedCurrency), 0) +
     preciousAssetSelectedCurrencyTotal;
 
+  const totalLiabilities = (filteredAssetData.liabilities || []).reduce((sum, item) => sum + convertCurrency(item.outstandingAmount, item.currency || 'INR', selectedCurrency), 0);
+  const netWorthValue = totalBalance - totalLiabilities;
+
+  const formatCurrency = (val: number) => {
+    const config = CURRENCIES[selectedCurrency];
+    if (selectedCurrency === 'INR') {
+      return `₹${Number(val).toLocaleString('en-IN')}`;
+    }
+    return `${config.symbol}${Number(val).toLocaleString('en-US')}`;
+  };
+
+  const sidebarAlertsCount = useMemo(() => {
+    const today = new Date();
+    let count = 0;
+    
+    (filteredAssetData.fixedDeposits || []).forEach(fd => {
+      if (!fd.maturityDate) return;
+      const mDate = new Date(fd.maturityDate);
+      const diffTime = mDate.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      if (diffDays >= -10 && diffDays <= 90) count++;
+    });
+
+    (filteredAssetData.insurances || []).forEach(ins => {
+      if (!ins.dueDate) return;
+      const dDate = new Date(ins.dueDate);
+      const diffTime = dDate.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      if (diffDays >= -10 && diffDays <= 90 && ins.status === 'Active') count++;
+    });
+
+    (filteredAssetData.liabilities || []).forEach(loan => {
+      // 1. EMI Alerts
+      let dueDay = 5;
+      if (loan.startDate) {
+        const sDate = new Date(loan.startDate);
+        if (!isNaN(sDate.getTime())) {
+          dueDay = sDate.getDate();
+        }
+      }
+      const currentYear = today.getFullYear();
+      const currentMonth = today.getMonth();
+      let emiDueDate = new Date(currentYear, currentMonth, dueDay);
+      if (emiDueDate.getTime() - today.getTime() < -2 * 24 * 60 * 60 * 1000) {
+        emiDueDate = new Date(currentYear, currentMonth + 1, dueDay);
+      }
+      const diffTime = emiDueDate.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      if (diffDays >= -2 && diffDays <= 15 && loan.monthlyPayment > 0) count++;
+
+      // 2. Loan Maturities
+      if (loan.endDate) {
+        const eDate = new Date(loan.endDate);
+        if (!isNaN(eDate.getTime())) {
+          const diffMaturityTime = eDate.getTime() - today.getTime();
+          const diffMaturityDays = Math.ceil(diffMaturityTime / (1000 * 60 * 60 * 24));
+          if (diffMaturityDays >= -10 && diffMaturityDays <= 90) count++;
+        }
+      }
+    });
+
+    return count;
+  }, [filteredAssetData]);
+
   // Tabs layout configs
   const tabs = [
     { id: 'dashboard' as TabType, label: 'Dashboard', icon: LayoutDashboard },
@@ -1029,6 +1178,7 @@ export default function App() {
     { id: 'terrafirma' as TabType, label: 'Landed Estates', icon: Home },
     { id: 'precious' as TabType, label: 'Gold & Ornaments', icon: Coins },
     { id: 'insurances' as TabType, label: 'InsureShield', icon: Shield },
+    { id: 'liabilities' as TabType, label: 'Liability Ledger', icon: CreditCard },
     { id: 'account' as TabType, label: 'Accounts', icon: User },
   ];
 
@@ -1154,8 +1304,10 @@ export default function App() {
           </div>
         </div>
 
-        {/* Navigation Tabs */}
-        <nav className="space-y-1 flex-1 text-[13px] font-medium">
+        {/* Scrollable Navigation & Settings Sidebar Body */}
+        <div className="flex-1 min-h-0 overflow-y-auto pr-1 scrollbar-none space-y-4">
+          {/* Navigation Tabs */}
+          <nav className="space-y-1 text-[13px] font-medium">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -1217,10 +1369,41 @@ export default function App() {
                     {(filteredAssetData.preciousAssets || []).length}
                   </span>
                 )}
+                {tab.id === 'liabilities' && (
+                  <span className="relative z-10 text-[10px] font-mono bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 px-1.5 py-0.5 rounded">
+                    {(filteredAssetData.liabilities || []).length}
+                  </span>
+                )}
               </button>
             );
           })}
         </nav>
+
+        {/* Consolidated Asset Summary Sidebar Widget */}
+        <div className="bg-white/10 dark:bg-slate-900/10 border border-white/20 dark:border-white/5 rounded-2xl p-3.5 space-y-2.5 backdrop-blur-sm mt-4 shadow-sm">
+          <div className="flex justify-between items-center">
+            <span className="text-[9px] font-bold tracking-wider uppercase text-slate-500 dark:text-slate-400">Consolidated Summary</span>
+            <span className={`w-1.5 h-1.5 rounded-full ${sidebarAlertsCount > 0 ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'}`} />
+          </div>
+          <div className="space-y-1">
+            <span className="text-[10px] text-slate-500 dark:text-slate-450 block leading-none">Net Worth ({selectedCurrency})</span>
+            <div className="text-sm font-black text-slate-900 dark:text-slate-50 font-mono truncate" title={formatCurrency(netWorthValue)}>
+              {formatCurrency(netWorthValue)}
+            </div>
+          </div>
+          <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-200/10 font-semibold">
+            <span>{Object.values(filteredAssetData).reduce((sum, list: any) => sum + (list || []).length, 0)} Assets</span>
+            {sidebarAlertsCount > 0 ? (
+              <span className="text-amber-600 dark:text-amber-400 font-extrabold flex items-center gap-0.5 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/15">
+                {sidebarAlertsCount} Alerts
+              </span>
+            ) : (
+              <span className="text-emerald-600 dark:text-emerald-400 font-extrabold flex items-center gap-0.5 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/15">
+                Safe Status
+              </span>
+            )}
+          </div>
+        </div>
 
         {/* Currency Selector */}
         <div className="mt-4 pt-4 border-t border-slate-200/20 text-xs">
@@ -1289,7 +1472,12 @@ export default function App() {
           {/* Dropdown Toggle Button */}
           <button 
             type="button"
-            onClick={() => setIsBgDropdownOpen(!isBgDropdownOpen)}
+            onClick={() => {
+              setIsBgDropdownOpen(!isBgDropdownOpen);
+              if (!isBgDropdownOpen) {
+                setIsUserMenuOpen(false);
+              }
+            }}
             className="w-full flex items-center justify-between bg-white/30 dark:bg-slate-800/30 hover:bg-white/45 dark:hover:bg-slate-800/45 border border-white/40 dark:border-white/10 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-slate-100 transition-all cursor-pointer shadow-sm focus:outline-none"
           >
             <span className="flex items-center gap-2 min-w-0">
@@ -1387,6 +1575,7 @@ export default function App() {
               </motion.div>
             )}
           </AnimatePresence>
+        </div>
         </div>
 
         {/* Footer Profile */}
@@ -1497,7 +1686,12 @@ export default function App() {
 
           {/* Interactive footer profile card element */}
           <div 
-            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+            onClick={() => {
+              setIsUserMenuOpen(!isUserMenuOpen);
+              if (!isUserMenuOpen) {
+                setIsBgDropdownOpen(false);
+              }
+            }}
             className="flex items-center justify-between bg-white/20 dark:bg-slate-800/25 p-3 rounded-xl border border-white/30 dark:border-white/10 shadow-sm hover:bg-white/35 dark:hover:bg-slate-800/40 transition-all duration-300 cursor-pointer hover:scale-[1.02] active:scale-[0.98] group"
           >
             <div className="flex items-center gap-3 min-w-0">
@@ -1665,7 +1859,7 @@ export default function App() {
 
               {/* Scrollable Container (Dynamic & Responsive for Small Heights & Orientations) */}
               <div 
-                className="flex-1 overflow-y-auto px-5 py-4 space-y-5 scrollbar-none"
+                className="flex-1 min-h-0 overflow-y-auto px-5 py-4 space-y-5 scrollbar-none"
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
                 {/* Navigation Tabs */}
@@ -1721,10 +1915,41 @@ export default function App() {
                             {(filteredAssetData.preciousAssets || []).length}
                           </span>
                         )}
+                        {tab.id === 'liabilities' && (
+                          <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${isActive ? 'bg-indigo-700 text-white' : 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300'}`}>
+                            {(filteredAssetData.liabilities || []).length}
+                          </span>
+                        )}
                       </button>
                     );
                   })}
                 </nav>
+
+                {/* Consolidated Asset Summary Sidebar Widget */}
+                <div className="bg-white/10 dark:bg-slate-900/10 border border-white/20 dark:border-white/5 rounded-2xl p-3.5 space-y-2.5 backdrop-blur-sm mt-3 shadow-sm">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[9px] font-bold tracking-wider uppercase text-slate-500 dark:text-slate-400">Consolidated Summary</span>
+                    <span className={`w-1.5 h-1.5 rounded-full ${sidebarAlertsCount > 0 ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'}`} />
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-slate-500 dark:text-slate-450 block leading-none">Net Worth ({selectedCurrency})</span>
+                    <div className="text-sm font-black text-slate-900 dark:text-slate-55 font-mono truncate" title={formatCurrency(netWorthValue)}>
+                      {formatCurrency(netWorthValue)}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-200/10 font-semibold">
+                    <span>{Object.values(filteredAssetData).reduce((sum, list: any) => sum + (list || []).length, 0)} Assets</span>
+                    {sidebarAlertsCount > 0 ? (
+                      <span className="text-amber-600 dark:text-amber-400 font-extrabold flex items-center gap-0.5 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/15">
+                        {sidebarAlertsCount} Alerts
+                      </span>
+                    ) : (
+                      <span className="text-emerald-600 dark:text-emerald-400 font-extrabold flex items-center gap-0.5 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/15">
+                        Safe Status
+                      </span>
+                    )}
+                  </div>
+                </div>
 
                 {/* Currency Selector Mobile */}
                 <div className="pt-3 border-t border-slate-200/20 text-xs">
@@ -1793,7 +2018,12 @@ export default function App() {
                   {/* Dropdown Toggle Button */}
                   <button 
                     type="button"
-                    onClick={() => setIsMobileBgDropdownOpen(!isMobileBgDropdownOpen)}
+                    onClick={() => {
+                      setIsMobileBgDropdownOpen(!isMobileBgDropdownOpen);
+                      if (!isMobileBgDropdownOpen) {
+                        setIsMobileUserMenuOpen(false);
+                      }
+                    }}
                     className="w-full flex items-center justify-between bg-white/30 dark:bg-slate-800/30 hover:bg-white/45 dark:hover:bg-slate-800/45 border border-white/40 dark:border-white/10 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-slate-100 transition-all cursor-pointer shadow-sm focus:outline-none"
                   >
                     <span className="flex items-center gap-2 min-w-0">
@@ -1986,7 +2216,12 @@ export default function App() {
                 </AnimatePresence>
 
                 <div 
-                  onClick={() => setIsMobileUserMenuOpen(!isMobileUserMenuOpen)}
+                  onClick={() => {
+                    setIsMobileUserMenuOpen(!isMobileUserMenuOpen);
+                    if (!isMobileUserMenuOpen) {
+                      setIsMobileBgDropdownOpen(false);
+                    }
+                  }}
                   className="flex items-center justify-between bg-white/20 dark:bg-slate-800/25 p-2.5 rounded-xl border border-white/30 dark:border-white/10 shadow-sm hover:bg-white/35 dark:hover:bg-slate-800/40 transition-all duration-300 cursor-pointer"
                 >
                   <div className="flex items-center gap-2 min-w-0">
@@ -2114,6 +2349,17 @@ export default function App() {
                 selectedUserIds={selectedUserIds}
               />
             )}
+            {activeTab === 'liabilities' && (
+              <LiabilityLedgerView
+                liabilities={filteredAssetData.liabilities || []}
+                onAddLiability={handleAddLiability}
+                onEditLiability={handleEditLiability}
+                onDeleteLiability={handleDeleteLiability}
+                selectedCurrency={selectedCurrency}
+                onBackToDashboard={() => setActiveTab('dashboard')}
+                selectedUserIds={selectedUserIds}
+              />
+            )}
             {activeTab === 'precious' && (
               <PreciousReservesView
                 assets={filteredAssetData.preciousAssets || []}
@@ -2129,6 +2375,7 @@ export default function App() {
             )}
             {activeTab === 'account' && (
               <AccountTabView
+                selectedCurrency={selectedCurrency}
                 loggedInAccount={loggedInAccount!}
                 onLogout={() => {
                   setLoggedInAccount(null);

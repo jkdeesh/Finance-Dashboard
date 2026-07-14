@@ -34,6 +34,7 @@ export interface MutualFund {
   currentNav: number; // Current Price
   currency?: CurrencyCode; // Currency per MF
   ownerIds: string[];
+  investmentType?: 'Lumpsum' | 'SIP' | 'SWP' | 'Other';
 }
 
 export interface UserProfile {
@@ -64,6 +65,21 @@ export interface PreciousAsset {
   ownerIds: string[];
 }
 
+export interface Liability {
+  id: string;
+  lenderName: string; // e.g. "HDFC Bank", "Chase"
+  liabilityType: 'Home Loan' | 'Personal Loan' | 'Car Loan' | 'Education Loan' | 'Credit Card' | 'Business Loan' | 'Other';
+  totalAmount: number; // Total limit or total loan amount
+  interestRate: number; // e.g. 8.5
+  monthlyPayment: number; // EMI or average repayment
+  startDate: string;
+  endDate?: string;
+  outstandingAmount: number; // Remaining debt
+  notes?: string;
+  currency?: CurrencyCode;
+  ownerIds: string[];
+}
+
 export interface AssetData {
   bankSavings: BankAccount[];
   fixedDeposits: FixedDeposit[];
@@ -71,9 +87,10 @@ export interface AssetData {
   immovableAssets: ImmovableAsset[];
   insurances: InsurancePolicy[];
   preciousAssets?: PreciousAsset[]; // Vault Reserves
+  liabilities?: Liability[]; // Credit cards, loans, repayments
 }
 
-export type TabType = 'dashboard' | 'savings' | 'deposits' | 'funds' | 'terrafirma' | 'insurances' | 'precious' | 'account';
+export type TabType = 'dashboard' | 'savings' | 'deposits' | 'funds' | 'terrafirma' | 'insurances' | 'precious' | 'account' | 'liabilities';
 
 export interface ImmovableAsset {
   id: string;

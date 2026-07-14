@@ -212,37 +212,37 @@ export const BankSavingsView: React.FC<BankSavingsViewProps> = ({
 
       {/* Analytics Row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <GlassCard className="flex items-center gap-4">
-          <div className="p-3 bg-sky-500/10 rounded-2xl text-sky-700 dark:text-sky-400 border border-sky-500/10">
-            <Coins className="h-6 w-6" />
+        <GlassCard className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-4 sm:p-5">
+          <div className="p-2.5 bg-sky-500/10 rounded-2xl text-sky-700 dark:text-sky-400 border border-sky-500/10 shrink-0">
+            <Coins className="h-5 w-5 sm:h-6 sm:w-6" />
           </div>
-          <div>
-            <span className="text-slate-500 dark:text-slate-300 text-xs font-bold tracking-wider uppercase block">Total Liquid Balance</span>
-            <span className="text-2xl font-display font-bold text-slate-900 dark:text-slate-100">
+          <div className="min-w-0 w-full">
+            <span className="text-slate-500 dark:text-slate-300 text-[10px] sm:text-xs font-bold tracking-wider uppercase block" title="Total Liquid Balance">Total Liquid Balance</span>
+            <span className="text-lg sm:text-2xl font-display font-bold text-slate-900 dark:text-slate-100 block whitespace-nowrap">
               {formatCurrency(totalBalance)}
             </span>
           </div>
         </GlassCard>
 
-        <GlassCard className="flex items-center gap-4">
-          <div className="p-3 bg-indigo-500/10 rounded-2xl text-indigo-700 dark:text-indigo-400 border border-indigo-500/10">
-            <Percent className="h-6 w-6" />
+        <GlassCard className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-4 sm:p-5">
+          <div className="p-2.5 bg-indigo-500/10 rounded-2xl text-indigo-700 dark:text-indigo-400 border border-indigo-500/10 shrink-0">
+            <Percent className="h-5 w-5 sm:h-6 sm:w-6" />
           </div>
-          <div>
-            <span className="text-slate-500 dark:text-slate-300 text-xs font-bold tracking-wider uppercase block">Avg. Interest Rate</span>
-            <span className="text-2xl font-display font-bold text-slate-900 dark:text-slate-100">
+          <div className="min-w-0 w-full">
+            <span className="text-slate-500 dark:text-slate-300 text-[10px] sm:text-xs font-bold tracking-wider uppercase block" title="Avg. Interest Rate">Avg. Interest Rate</span>
+            <span className="text-lg sm:text-2xl font-display font-bold text-slate-900 dark:text-slate-100 block whitespace-nowrap">
               {averageInterestRate.toFixed(2)}% APY
             </span>
           </div>
         </GlassCard>
 
-        <GlassCard className="flex items-center gap-4">
-          <div className="p-3 bg-emerald-500/10 rounded-2xl text-emerald-700 dark:text-emerald-400 border border-emerald-500/10">
-            <TrendingUp className="h-6 w-6" />
+        <GlassCard className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-4 sm:p-5">
+          <div className="p-2.5 bg-emerald-500/10 rounded-2xl text-emerald-700 dark:text-emerald-400 border border-emerald-500/10 shrink-0">
+            <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6" />
           </div>
-          <div>
-            <span className="text-slate-500 dark:text-slate-300 text-xs font-bold tracking-wider uppercase block">Est. Annual Earnings</span>
-            <span className="text-2xl font-display font-bold text-slate-900 dark:text-slate-100">
+          <div className="min-w-0 w-full">
+            <span className="text-slate-500 dark:text-slate-300 text-[10px] sm:text-xs font-bold tracking-wider uppercase block" title="Est. Annual Earnings">Est. Annual Earnings</span>
+            <span className="text-lg sm:text-2xl font-display font-bold text-slate-900 dark:text-slate-100 block whitespace-nowrap">
               {formatCurrency(estimatedAnnualEarnings)}
             </span>
           </div>
@@ -463,21 +463,21 @@ export const BankSavingsView: React.FC<BankSavingsViewProps> = ({
                           </div>
                         </div>
                       </td>
-                      <td className="py-4 px-4 text-slate-700 dark:text-slate-200">
-                        <span className="px-2 py-1 rounded-full bg-slate-100/80 dark:bg-slate-800/80 text-[10px] font-semibold border border-slate-200/50 dark:border-slate-700/50">
+                      <td className="py-4 px-4 text-slate-700 dark:text-slate-200 whitespace-nowrap">
+                        <span className="px-2 py-1 rounded-full bg-slate-100/80 dark:bg-slate-800/80 text-[10px] font-semibold border border-slate-200/50 dark:border-slate-700/50 whitespace-nowrap">
                           {acc.accountType}
                         </span>
                       </td>
-                      <td className="py-4 px-4 text-slate-600 dark:text-slate-300 font-mono">
+                      <td className="py-4 px-4 text-slate-600 dark:text-slate-300 font-mono whitespace-nowrap">
                         {acc.accountNumber.length <= 4 ? `•••• ${acc.accountNumber}` : acc.accountNumber}
                       </td>
-                      <td className="py-4 px-4 text-right font-semibold text-slate-800 dark:text-slate-200 font-mono">
+                      <td className="py-4 px-4 text-right font-semibold text-slate-800 dark:text-slate-200 font-mono whitespace-nowrap">
                         {acc.interestRate.toFixed(2)}% APY
                       </td>
-                      <td className="py-4 px-4 text-right font-bold text-slate-900 dark:text-slate-100 text-sm font-mono">
-                        <div>{formatAccountCurrency(acc.balance, acc.currency)}</div>
+                      <td className="py-4 px-4 text-right font-bold text-slate-900 dark:text-slate-100 text-sm font-mono whitespace-nowrap">
+                        <div className="whitespace-nowrap">{formatAccountCurrency(acc.balance, acc.currency)}</div>
                         {acc.currency && acc.currency !== selectedCurrency && (
-                          <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                          <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap">
                             ≈ {formatCurrency(convertCurrency(acc.balance, acc.currency, selectedCurrency))}
                           </div>
                         )}
@@ -518,8 +518,8 @@ export const BankSavingsView: React.FC<BankSavingsViewProps> = ({
                       <InstitutionLogo name={acc.bankName} size="md" className="shrink-0" />
                       <div className="min-w-0">
                         <span className="font-extrabold text-slate-950 dark:text-slate-100 text-sm block truncate">{acc.bankName}</span>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <span className="px-1.5 py-0.5 rounded bg-slate-100/80 dark:bg-slate-800/80 text-[9px] font-bold border border-slate-200/50 dark:border-slate-700/50 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5 mt-0.5 max-w-full overflow-hidden">
+                          <span className="px-1.5 py-0.5 rounded bg-slate-100/80 dark:bg-slate-800/80 text-[9px] font-bold border border-slate-200/50 dark:border-slate-700/50 whitespace-nowrap truncate max-w-[120px]" title={acc.accountType}>
                             {acc.accountType}
                           </span>
                           <span className="text-slate-500 dark:text-slate-400 text-[10px] font-mono whitespace-nowrap">
@@ -558,13 +558,13 @@ export const BankSavingsView: React.FC<BankSavingsViewProps> = ({
                       <span className="text-slate-500 dark:text-slate-400 text-[9px] block uppercase font-semibold">Yield Rate</span>
                       <span className="font-mono font-bold text-slate-800 dark:text-slate-200">{acc.interestRate.toFixed(2)}% APY</span>
                     </div>
-                    <div className="text-right">
-                      <span className="text-slate-500 dark:text-slate-400 text-[9px] block uppercase font-semibold">Current Balance</span>
-                      <div className="font-mono font-extrabold text-slate-900 dark:text-slate-100 text-sm">
+                    <div className="text-right whitespace-nowrap overflow-hidden">
+                      <span className="text-slate-500 dark:text-slate-400 text-[9px] block uppercase font-semibold whitespace-nowrap">Current Balance</span>
+                      <div className="font-mono font-extrabold text-slate-900 dark:text-slate-100 text-sm whitespace-nowrap">
                         {formatAccountCurrency(acc.balance, acc.currency)}
                       </div>
                       {acc.currency && acc.currency !== selectedCurrency && (
-                        <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium font-mono">
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium font-mono whitespace-nowrap">
                           ≈ {formatCurrency(convertCurrency(acc.balance, acc.currency, selectedCurrency))}
                         </div>
                       )}

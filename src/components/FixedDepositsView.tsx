@@ -234,37 +234,37 @@ export const FixedDepositsView: React.FC<FixedDepositsViewProps> = ({
 
       {/* Analytics Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <GlassCard className="flex items-center gap-4">
-          <div className="p-3 bg-amber-500/10 rounded-2xl text-amber-700 dark:text-amber-400 border border-amber-500/10">
-            <TrendingUp className="h-6 w-6" />
+        <GlassCard className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-4 sm:p-5">
+          <div className="p-2.5 bg-amber-500/10 rounded-2xl text-amber-700 dark:text-amber-400 border border-amber-500/10 shrink-0">
+            <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6" />
           </div>
-          <div>
-            <span className="text-slate-500 dark:text-slate-300 text-xs font-bold tracking-wider uppercase block">Total CD Capital</span>
-            <span className="text-2xl font-display font-bold text-slate-900 dark:text-slate-100">
+          <div className="min-w-0 w-full">
+            <span className="text-slate-500 dark:text-slate-300 text-[10px] sm:text-xs font-bold tracking-wider uppercase block" title="Total CD Capital">Total CD Capital</span>
+            <span className="text-lg sm:text-2xl font-display font-bold text-slate-900 dark:text-slate-100 block whitespace-nowrap">
               {formatCurrency(totalPrincipal)}
             </span>
           </div>
         </GlassCard>
 
-        <GlassCard className="flex items-center gap-4">
-          <div className="p-3 bg-emerald-500/10 rounded-2xl text-emerald-700 dark:text-emerald-400 border border-emerald-500/10">
-            <BadgePercent className="h-6 w-6" />
+        <GlassCard className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-4 sm:p-5">
+          <div className="p-2.5 bg-emerald-500/10 rounded-2xl text-emerald-700 dark:text-emerald-400 border border-emerald-500/10 shrink-0">
+            <BadgePercent className="h-5 w-5 sm:h-6 sm:w-6" />
           </div>
-          <div>
-            <span className="text-slate-500 dark:text-slate-300 text-xs font-bold tracking-wider uppercase block">Expected CD Earnings</span>
-            <span className="text-2xl font-display font-bold text-emerald-800 dark:text-emerald-400">
+          <div className="min-w-0 w-full">
+            <span className="text-slate-500 dark:text-slate-300 text-[10px] sm:text-xs font-bold tracking-wider uppercase block" title="Expected CD Earnings">Expected CD Earnings</span>
+            <span className="text-lg sm:text-2xl font-display font-bold text-emerald-850 dark:text-emerald-400 block whitespace-nowrap">
               {formatCurrency(totalInterestExpected)}
             </span>
           </div>
         </GlassCard>
 
-        <GlassCard className="flex items-center gap-4">
-          <div className="p-3 bg-indigo-500/10 rounded-2xl text-indigo-700 dark:text-indigo-400 border border-indigo-500/10">
-            <Clock className="h-6 w-6" />
+        <GlassCard className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-4 sm:p-5">
+          <div className="p-2.5 bg-indigo-500/10 rounded-2xl text-indigo-700 dark:text-indigo-400 border border-indigo-500/10 shrink-0">
+            <Clock className="h-5 w-5 sm:h-6 sm:w-6" />
           </div>
-          <div>
-            <span className="text-slate-500 dark:text-slate-300 text-xs font-bold tracking-wider uppercase block">Estimated Maturity Pool</span>
-            <span className="text-2xl font-display font-bold text-slate-900 dark:text-slate-100">
+          <div className="min-w-0 w-full">
+            <span className="text-slate-500 dark:text-slate-300 text-[10px] sm:text-xs font-bold tracking-wider uppercase block" title="Estimated Maturity Pool">Estimated Maturity Pool</span>
+            <span className="text-lg sm:text-2xl font-display font-bold text-slate-900 dark:text-slate-100 block whitespace-nowrap">
               {formatCurrency(totalMaturityValue)}
             </span>
           </div>

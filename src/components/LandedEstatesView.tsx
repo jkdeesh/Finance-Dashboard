@@ -169,47 +169,69 @@ export function LandedEstatesView({
 
   return (
     <div id="landed-estates-container" className="space-y-6">
-      {/* Header section with Stats */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
+      {/* Header Info Block */}
+      <div className="glass-card flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-6">
+        <div className="space-y-3">
           <button
-            id="back-btn"
             onClick={onBackToDashboard}
-            className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all cursor-pointer"
+            className="group flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all cursor-pointer bg-slate-100/55 dark:bg-slate-800/55 hover:bg-slate-200/55 dark:hover:bg-slate-700/55 px-3 py-1.5 rounded-xl border border-slate-200/40 dark:border-white/10 shadow-sm"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5 text-indigo-700" /> Back to Dashboard
           </button>
           <div>
-            <h1 className="text-xl md:text-2xl font-extrabold tracking-tight text-white flex items-center gap-2 uppercase">
-              <Building2 className="h-6 w-6 text-indigo-400" />
-              Landed Estates
+            <h1 className="text-3xl font-display font-extrabold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
+              <Building2 className="h-7 w-7 text-indigo-600" /> Landed Estates
             </h1>
-            <p className="text-xs text-slate-300">Immovable Assets & Real Estate Holdings</p>
+            <div className="text-slate-700 dark:text-slate-300 text-xs md:text-sm font-medium mt-1.5 block max-w-xl">
+              Track immovable assets, real estate holdings, land parcels, and plot valuations.
+            </div>
           </div>
         </div>
+        <button
+          onClick={handleOpenAddModal}
+          className="flex items-center gap-1.5 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-xl text-xs font-semibold shadow-md transition-all cursor-pointer shrink-0"
+        >
+          <Plus className="h-4 w-4" /> Add Property
+        </button>
+      </div>
 
-        <div className="flex items-center gap-3">
-          <GlassCard id="total-value-card" className="px-5 py-2.5 flex items-center gap-4 border border-white/10">
-            <div className="p-2 bg-indigo-500/20 text-indigo-300 rounded-lg">
-              <Coins className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Total Properties Value</p>
-              <h2 className="text-lg md:text-xl font-extrabold text-white">
-                {formatCurrency(totalValue)}
-              </h2>
-            </div>
-          </GlassCard>
+      {/* Analytics Row */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <GlassCard className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-4 sm:p-5">
+          <div className="p-2.5 bg-sky-500/10 rounded-2xl text-sky-700 dark:text-sky-400 border border-sky-500/10 shrink-0">
+            <Coins className="h-5 w-5 sm:h-6 sm:w-6" />
+          </div>
+          <div className="min-w-0 w-full">
+            <span className="text-slate-500 dark:text-slate-300 text-[10px] sm:text-xs font-bold tracking-wider uppercase block" title="Total Properties Value">Total Properties Value</span>
+            <span className="text-lg sm:text-2xl font-display font-bold text-slate-900 dark:text-slate-100 block whitespace-nowrap">
+              {formatCurrency(totalValue)}
+            </span>
+          </div>
+        </GlassCard>
 
-          <button
-            id="add-property-btn"
-            onClick={handleOpenAddModal}
-            className="px-4 py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition-all shadow-lg shadow-indigo-650/30 flex items-center gap-1.5 uppercase cursor-pointer"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Add Property</span>
-          </button>
-        </div>
+        <GlassCard className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-4 sm:p-5">
+          <div className="p-2.5 bg-indigo-500/10 rounded-2xl text-indigo-700 dark:text-indigo-400 border border-indigo-500/10 shrink-0">
+            <Building2 className="h-5 w-5 sm:h-6 sm:w-6" />
+          </div>
+          <div className="min-w-0 w-full">
+            <span className="text-slate-500 dark:text-slate-300 text-[10px] sm:text-xs font-bold tracking-wider uppercase block" title="Properties Tracked">Properties Tracked</span>
+            <span className="text-lg sm:text-2xl font-display font-bold text-slate-900 dark:text-slate-100 block whitespace-nowrap">
+              {assets.length} Holdings
+            </span>
+          </div>
+        </GlassCard>
+
+        <GlassCard className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-4 sm:p-5">
+          <div className="p-2.5 bg-emerald-500/10 rounded-2xl text-emerald-700 dark:text-emerald-400 border border-emerald-500/10 shrink-0">
+            <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6" />
+          </div>
+          <div className="min-w-0 w-full">
+            <span className="text-slate-500 dark:text-slate-300 text-[10px] sm:text-xs font-bold tracking-wider uppercase block" title="Average Asset Value">Average Asset Value</span>
+            <span className="text-lg sm:text-2xl font-display font-bold text-slate-900 dark:text-slate-100 block whitespace-nowrap">
+              {assets.length > 0 ? formatCurrency(totalValue / assets.length) : formatCurrency(0)}
+            </span>
+          </div>
+        </GlassCard>
       </div>
 
       {/* Main Grid layout: List + Map */}
@@ -217,24 +239,24 @@ export function LandedEstatesView({
         
         {/* Left Side: Property Listings */}
         <div className="lg:col-span-7 space-y-4">
-          <h3 className="text-xs font-extrabold uppercase text-slate-300 tracking-wider flex items-center gap-1.5">
-            <Building2 className="h-4 w-4 text-indigo-400" />
+          <h3 className="text-xs font-extrabold uppercase text-slate-700 dark:text-slate-300 tracking-wider flex items-center gap-1.5">
+            <Building2 className="h-4 w-4 text-indigo-500 dark:text-indigo-400" />
             Property Inventory ({assets.length})
           </h3>
 
           {assets.length === 0 ? (
-            <GlassCard id="empty-assets-card" className="p-12 text-center border border-white/5 flex flex-col items-center justify-center">
-              <div className="p-4 bg-white/5 rounded-full text-slate-400 mb-4">
+            <GlassCard id="empty-assets-card" className="p-12 text-center border border-slate-200 dark:border-white/5 flex flex-col items-center justify-center">
+              <div className="p-4 bg-slate-100 dark:bg-white/5 rounded-full text-slate-500 dark:text-slate-400 mb-4">
                 <Building2 className="h-8 w-8" />
               </div>
-              <p className="text-sm font-semibold text-white">No immovable assets tracked yet</p>
-              <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+              <p className="text-sm font-semibold text-slate-900 dark:text-white">No immovable assets tracked yet</p>
+              <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 max-w-sm mx-auto">
                 Track apartments, commercial stores, plots of land, and warehouses to complete your net-worth portfolio.
               </p>
               <button
                 id="empty-add-btn"
                 onClick={handleOpenAddModal}
-                className="mt-4 px-4 py-2.5 bg-white/10 hover:bg-white/15 text-white text-xs font-bold rounded-xl transition-all cursor-pointer"
+                className="mt-4 px-4 py-2.5 bg-slate-800/10 hover:bg-slate-800/15 dark:bg-white/10 dark:hover:bg-white/15 text-slate-800 dark:text-white text-xs font-bold rounded-xl transition-all cursor-pointer"
               >
                 Log First Property
               </button>
@@ -253,25 +275,25 @@ export function LandedEstatesView({
                     onClick={() => setSelectedAssetForMap(asset)}
                     className={`p-4 rounded-xl cursor-pointer border transition-all flex justify-between gap-4 relative group ${
                       isSelected 
-                        ? 'bg-indigo-950/40 border-indigo-500/50 shadow-md shadow-indigo-650/10' 
-                        : 'bg-white/5 hover:bg-white/8 border-white/5 hover:border-white/10'
+                        ? 'bg-indigo-50/75 dark:bg-indigo-950/40 border-indigo-300 dark:border-indigo-500/50 shadow-md shadow-indigo-650/10' 
+                        : 'bg-slate-50/45 dark:bg-white/5 hover:bg-slate-100/60 dark:hover:bg-white/8 border-slate-200/50 dark:border-white/5 hover:border-slate-300/60 dark:hover:border-white/10'
                     }`}
                   >
                     <div className="flex-1 space-y-2">
                       <div className="flex items-start gap-2.5">
                         <div className={`p-2 rounded-lg ${
-                          isSelected ? 'bg-indigo-500/20 text-indigo-300' : 'bg-white/5 text-slate-300'
+                          isSelected ? 'bg-indigo-500/20 text-indigo-600 dark:text-indigo-300' : 'bg-slate-200/60 dark:bg-white/5 text-slate-500 dark:text-slate-300'
                         }`}>
                           <Building2 className="h-4 w-4" />
                         </div>
                         <div>
-                          <h4 className="font-extrabold text-xs tracking-wide text-white">{asset.propertyName}</h4>
-                          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 mt-1 text-[10px] text-slate-400">
-                            <span className="px-1.5 py-0.5 bg-white/5 text-slate-300 rounded font-semibold text-[9px] uppercase">
+                          <h4 className="font-extrabold text-xs tracking-wide text-slate-900 dark:text-white">{asset.propertyName}</h4>
+                          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 mt-1 text-[10px] text-slate-500 dark:text-slate-400">
+                            <span className="px-1.5 py-0.5 bg-slate-200/50 dark:bg-white/5 text-slate-700 dark:text-slate-300 rounded font-semibold text-[9px] uppercase">
                               {asset.propertyType}
                             </span>
-                            <span className="flex items-center gap-0.5 text-slate-300 font-medium">
-                              <Maximize2 className="h-3 w-3 text-slate-400" />
+                            <span className="flex items-center gap-0.5 text-slate-600 dark:text-slate-300 font-medium">
+                              <Maximize2 className="h-3 w-3 text-slate-500 dark:text-slate-400" />
                               {asset.area} {asset.unit}
                             </span>
                           </div>
@@ -279,23 +301,23 @@ export function LandedEstatesView({
                       </div>
 
                       {asset.locationName && (
-                        <div className="flex items-center gap-1 text-[10px] text-slate-400 pl-1">
-                          <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                          <span className="truncate">{asset.locationName}</span>
+                        <div className="flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400 pl-1">
+                          <MapPin className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
+                          <span className="truncate text-slate-600 dark:text-slate-300 font-medium">{asset.locationName}</span>
                         </div>
                       )}
 
                       {asset.notes && (
-                        <p className="text-[10px] text-slate-400 italic pl-1 border-l border-white/5">
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 italic pl-1 border-l border-slate-200 dark:border-white/5">
                           {asset.notes}
                         </p>
                       )}
 
                       <div className="flex items-center gap-1.5 pt-1 pl-1">
-                        <span className="text-[8px] uppercase font-bold text-slate-500">Owners:</span>
+                        <span className="text-[8px] uppercase font-bold text-slate-400 dark:text-slate-500">Owners:</span>
                         <div className="flex flex-wrap gap-1">
                           {asset.ownerIds.map((owner) => (
-                            <span key={owner} className="px-1.5 py-0.5 bg-white/5 text-slate-400 rounded-full text-[8px] font-semibold uppercase">
+                            <span key={owner} className="px-1.5 py-0.5 bg-slate-200/50 dark:bg-white/5 text-slate-600 dark:text-slate-400 rounded-full text-[8px] font-semibold uppercase">
                               {owner}
                             </span>
                           ))}
@@ -305,12 +327,12 @@ export function LandedEstatesView({
 
                     <div className="flex flex-col items-end justify-between text-right shrink-0">
                       <div>
-                        <p className="text-[9px] font-bold text-slate-400 uppercase">Estimated Value</p>
-                        <h4 className="text-sm font-extrabold text-white mt-0.5">
+                        <p className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase">Estimated Value</p>
+                        <h4 className="text-sm font-extrabold text-slate-900 dark:text-white mt-0.5">
                           {formatCurrency(converted)}
                         </h4>
                         {assetCurr !== selectedCurrency && (
-                          <p className="text-[8px] text-slate-400">
+                          <p className="text-[8px] text-slate-500 dark:text-slate-400">
                             ({formatCurrency(asset.estimatedValue, assetCurr)})
                           </p>
                         )}
@@ -323,7 +345,7 @@ export function LandedEstatesView({
                             e.stopPropagation();
                             handleOpenEditModal(asset);
                           }}
-                          className="p-1.5 bg-white/5 hover:bg-indigo-500/20 text-slate-300 hover:text-indigo-300 rounded-lg transition-all cursor-pointer"
+                          className="p-1.5 bg-slate-200/50 dark:bg-white/5 hover:bg-indigo-500/25 dark:hover:bg-indigo-500/20 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-300 rounded-lg transition-all cursor-pointer"
                           title="Edit details"
                         >
                           <Edit3 className="h-3.5 w-3.5" />
@@ -331,14 +353,10 @@ export function LandedEstatesView({
                         <button
                           id={`delete-property-btn-${asset.id}`}
                           onClick={(e) => {
-                            e.stopPropagation(); // <--- THIS IS THE KEY
-                            /* e.preventDefault();  // Good practice in forms/interactive cards
-                            if (confirm('Are you sure you want to delete this property?')) {
-                              onDeleteAsset(asset.id);
-                            } */
-                           setAssetToDelete(asset);
+                            e.stopPropagation();
+                            setAssetToDelete(asset);
                           }}
-                          className="p-1.5 bg-white/5 hover:bg-rose-500/20 text-slate-300 hover:text-rose-400 rounded-lg transition-all cursor-pointer"
+                          className="p-1.5 bg-slate-200/50 dark:bg-white/5 hover:bg-rose-500/25 dark:hover:bg-rose-500/20 text-slate-600 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 rounded-lg transition-all cursor-pointer"
                           title="Delete Property"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -366,20 +384,20 @@ export function LandedEstatesView({
 
         {/* Right Side: Google Maps Location Viewer */}
         <div className="lg:col-span-5 space-y-4">
-          <h3 className="text-xs font-extrabold uppercase text-slate-300 tracking-wider flex items-center gap-1.5">
-            <MapIcon className="h-4 w-4 text-indigo-400" />
+          <h3 className="text-xs font-extrabold uppercase text-slate-700 dark:text-slate-300 tracking-wider flex items-center gap-1.5">
+            <MapIcon className="h-4 w-4 text-indigo-500 dark:text-indigo-400" />
             Estate Location Map
           </h3>
 
-          <GlassCard id="map-holder-card" className="p-2 border border-white/10 h-[380px] md:h-[450px] relative overflow-hidden flex flex-col">
+          <GlassCard id="map-holder-card" className="p-2 border border-slate-200/60 dark:border-white/10 h-[380px] md:h-[450px] relative overflow-hidden flex flex-col">
             {activeMapAsset ? (
               <div className="flex-1 flex flex-col overflow-hidden rounded-lg">
-                <div className="px-3 py-2 bg-black/20 backdrop-blur-md flex items-center justify-between border-b border-white/5">
+                <div className="px-3 py-2 bg-slate-100/90 dark:bg-black/20 backdrop-blur-md flex items-center justify-between border-b border-slate-200 dark:border-white/5">
                   <div className="min-w-0">
-                    <p className="text-[9px] uppercase font-bold text-indigo-300">Active Map Selection</p>
-                    <h4 className="font-extrabold text-xs text-white truncate">{activeMapAsset.propertyName}</h4>
+                    <p className="text-[9px] uppercase font-bold text-indigo-600 dark:text-indigo-300">Active Map Selection</p>
+                    <h4 className="font-extrabold text-xs text-slate-900 dark:text-white truncate">{activeMapAsset.propertyName}</h4>
                   </div>
-                  <div className="text-[9px] text-slate-400 bg-white/5 px-2 py-0.5 rounded shrink-0">
+                  <div className="text-[9px] text-slate-600 dark:text-slate-400 bg-slate-200/50 dark:bg-white/5 px-2 py-0.5 rounded shrink-0">
                     Lat: {activeMapAsset.latitude}, Lng: {activeMapAsset.longitude}
                   </div>
                 </div>
@@ -399,14 +417,14 @@ export function LandedEstatesView({
                   />
                   
                   {/* Floating Map Mode Toggle */}
-                  <div className="absolute bottom-3 left-3 bg-black/75 backdrop-blur-md px-1.5 py-1 rounded-xl flex items-center gap-1 border border-white/10 shadow-lg z-10">
+                  <div className="absolute bottom-3 left-3 bg-white/90 dark:bg-black/75 backdrop-blur-md px-1.5 py-1 rounded-xl flex items-center gap-1 border border-slate-200 dark:border-white/10 shadow-lg z-10">
                     <button
                       type="button"
                       onClick={() => setMapMode('m')}
                       className={`px-2 py-1 rounded-lg text-[9px] font-bold tracking-wider uppercase transition-all cursor-pointer ${
                         mapMode === 'm'
                           ? 'bg-indigo-600 text-white shadow-sm font-extrabold'
-                          : 'text-slate-300 hover:text-white hover:bg-white/5 font-medium'
+                          : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-white dark:hover:bg-white/5 font-medium'
                       }`}
                     >
                       Map
@@ -417,7 +435,7 @@ export function LandedEstatesView({
                       className={`px-2 py-1 rounded-lg text-[9px] font-bold tracking-wider uppercase transition-all cursor-pointer ${
                         mapMode === 'h'
                           ? 'bg-indigo-600 text-white shadow-sm font-extrabold'
-                          : 'text-slate-300 hover:text-white hover:bg-white/5 font-medium'
+                          : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-white dark:hover:bg-white/5 font-medium'
                       }`}
                     >
                       Satellite

@@ -48,7 +48,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, setActiveTab
   const [activeHistoryPoint, setActiveHistoryPoint] = useState<number | null>(5); // Default to latest month
 
   const [widgetOrder, setWidgetOrder] = useState<string[]>(() => {
-    const defaultWidgets = ['trend', 'allocation', 'precious', 'mutualFunds', 'landedEstates', 'insurances', 'insights'];
+    const defaultWidgets = ['trend', 'allocation', 'savings', 'deposits', 'mutualFunds', 'landedEstates', 'precious', 'insurances', 'liabilities', 'insights'];
     try {
       const saved = localStorage.getItem('asset_tracker_widget_order');
       if (saved) {
@@ -130,10 +130,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, setActiveTab
           return {
             trend: parsed.trend ?? 2,
             allocation: parsed.allocation ?? 1,
+            savings: parsed.savings ?? 1,
+            deposits: parsed.deposits ?? 1,
             precious: parsed.precious ?? 1,
             mutualFunds: parsed.mutualFunds ?? 1,
             landedEstates: parsed.landedEstates ?? 1,
             insurances: parsed.insurances ?? 1,
+            liabilities: parsed.liabilities ?? 1,
             insights: parsed.insights ?? 2
           };
         }
@@ -144,10 +147,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, setActiveTab
     return {
       trend: 2,
       allocation: 1,
+      savings: 1,
+      deposits: 1,
       precious: 1,
       mutualFunds: 1,
       landedEstates: 1,
       insurances: 1,
+      liabilities: 1,
       insights: 2
     };
   });
@@ -253,6 +259,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, setActiveTab
   });
 
   const totalPortfolioValue = totalSavings + totalFDValue + totalMutualFundsCurrent + totalLandedEstates + totalPreciousValue;
+  const totalLiabilities = (data.liabilities || []).reduce((sum, item) => sum + convertCurrency(item.outstandingAmount, item.currency || 'INR', selectedCurrency), 0);
+  const netWorthValue = totalPortfolioValue - totalLiabilities;
   const totalInvestedPrincipal = totalSavings + totalFDPrincipal + totalMutualFundsInvested + totalLandedEstates + totalPreciousInvested;
   const overallProfit = totalPortfolioValue - totalInvestedPrincipal;
   const overallProfitPercent = totalInvestedPrincipal > 0 ? (overallProfit / totalInvestedPrincipal) * 100 : 0;
@@ -263,6 +271,21 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, setActiveTab
   const fundsPercent = totalPortfolioValue > 0 ? (totalMutualFundsCurrent / totalPortfolioValue) * 100 : 0;
   const landedEstatesPercent = totalPortfolioValue > 0 ? (totalLandedEstates / totalPortfolioValue) * 100 : 0;
   const preciousPercent = totalPortfolioValue > 0 ? (totalPreciousValue / totalPortfolioValue) * 100 : 0;
+
+  // Mutual fund type breakdown
+  const mutualFundsByType = (data.mutualFunds || []).reduce((acc, item) => {
+    const type = item.investmentType || 'Lumpsum';
+    const curr = item.currency || 'INR';
+    const currentVal = convertCurrency(item.units * item.currentNav, curr, selectedCurrency);
+    const investedVal = convertCurrency(item.units * item.averageNav, curr, selectedCurrency);
+    
+    if (!acc[type]) {
+      acc[type] = { invested: 0, current: 0 };
+    }
+    acc[type].invested += investedVal;
+    acc[type].current += currentVal;
+    return acc;
+  }, {} as Record<string, { invested: number; current: number }>);
 
   // Formatting helper
   const formatCurrency = (val: number) => {
@@ -831,6 +854,32 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, setActiveTab
                           />
                         </div>
                       </div>
+
+                      {/* Investment Type Breakdown */}
+                      <div className="mt-4 pt-3 border-t border-slate-200/10">
+                        <div className="text-[10px] uppercase font-bold tracking-wider text-slate-500 mb-2">Breakdown by Type</div>
+                        <div className="grid grid-cols-3 gap-2 text-center">
+                          {['Lumpsum', 'SIP', 'SWP'].map(type => {
+                            const stats = mutualFundsByType[type] || { invested: 0, current: 0 };
+                            const profit = stats.current - stats.invested;
+                            return (
+                              <div key={type} className="p-1.5 rounded-xl bg-slate-500/5 dark:bg-slate-400/5 border border-slate-200/10">
+                                <div className="text-[9px] uppercase font-extrabold text-slate-500">{type}</div>
+                                <div className="text-xs font-mono font-bold text-slate-800 dark:text-slate-200 mt-0.5 truncate" title={formatCurrency(stats.current)}>
+                                  {formatCurrency(stats.current)}
+                                </div>
+                                {stats.invested > 0 ? (
+                                  <div className={`text-[9px] font-bold ${profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600'}`}>
+                                    {profit >= 0 ? '+' : ''}{((profit / stats.invested) * 100).toFixed(0)}%
+                                  </div>
+                                ) : (
+                                  <div className="text-[9px] text-slate-400">—</div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
                     </>
                   );
                 })()}
@@ -1184,6 +1233,282 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, setActiveTab
       );
     }
 
+    if (widgetId === 'savings') {
+      const accounts = data.bankSavings || [];
+      return (
+        <div key="savings" {...containerProps}>
+          {renderControls()}
+          <GlassCard hoverable onClick={() => setActiveTab('savings')} className="cursor-pointer flex flex-col justify-between h-full relative overflow-hidden pt-14 px-6 pb-6">
+            <div>
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                    <Landmark className="h-3 w-3 text-sky-500" />
+                    Active Savings Accounts
+                  </h4>
+                  <h3 className="text-xl sm:text-2xl font-display font-black text-slate-900 dark:text-slate-100 mt-1 whitespace-nowrap">
+                    {formatCurrency(totalSavings)}
+                  </h3>
+                </div>
+                <div className="text-[9px] bg-sky-500/10 text-sky-500 font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider shrink-0">
+                  {accounts.length} Accounts
+                </div>
+              </div>
+
+              {accounts.length === 0 ? (
+                <div className="py-6 text-center text-xs text-slate-400 font-medium">
+                  No bank accounts tracked yet. Click to record one.
+                </div>
+              ) : (
+                <div className={`mt-4 ${size === 1 ? 'space-y-2 max-h-[140px] overflow-y-auto' : 'grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[220px] overflow-y-auto'} pr-1`}>
+                  {accounts.slice(0, size === 1 ? 3 : 6).map((acc, idx) => {
+                    const pctOfTotal = totalSavings > 0 ? (convertCurrency(acc.balance, acc.currency || 'INR', selectedCurrency) / totalSavings) * 100 : 0;
+                    return (
+                      <div key={acc.id || idx} className="p-2.5 rounded-xl border transition-all text-xs bg-white/30 dark:bg-slate-800/20 border-white/20 dark:border-white/5 hover:bg-white/50 flex flex-col justify-between">
+                        <div className="flex justify-between items-start gap-2">
+                          <div className="min-w-0">
+                            <span className="font-bold block truncate text-slate-850 dark:text-slate-100">{acc.bankName}</span>
+                            <span className="text-[9px] text-slate-500 dark:text-slate-400 block truncate whitespace-nowrap">
+                              {acc.accountType} • {acc.interestRate.toFixed(2)}% APY
+                            </span>
+                          </div>
+                          <div className="text-right shrink-0 font-mono font-bold text-slate-900 dark:text-slate-50">
+                            {formatCurrency(convertCurrency(acc.balance, acc.currency || 'INR', selectedCurrency))}
+                          </div>
+                        </div>
+                        {size > 1 && (
+                          <div className="mt-2.5 pt-2 border-t border-slate-200/10">
+                            <div className="flex justify-between text-[8px] text-slate-400 font-semibold mb-1">
+                              <span>Allocation Share</span>
+                              <span>{pctOfTotal.toFixed(1)}%</span>
+                            </div>
+                            <div className="w-full bg-slate-200/30 dark:bg-slate-700/30 h-1 rounded-full overflow-hidden">
+                              <div className="bg-sky-500 h-full rounded-full" style={{ width: `${pctOfTotal}%` }} />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            <div className="mt-4 pt-3 border-t border-slate-200/20 flex justify-between items-center text-[10px] font-semibold text-indigo-800 dark:text-indigo-400">
+              <span className="uppercase tracking-wider truncate mr-1">Liquid Capital</span>
+              <button 
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setActiveTab('savings'); }}
+                className="flex items-center gap-0.5 hover:underline text-indigo-600 dark:text-indigo-300 font-bold cursor-pointer bg-transparent border-none p-0 shrink-0"
+              >
+                View Savings <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </GlassCard>
+          {/* Resize drag handle */}
+          <div 
+            onMouseDown={(e) => handleResizeStart(e, 'savings')}
+            className="absolute top-0 right-0 bottom-0 w-3 cursor-col-resize group-hover/widget:bg-indigo-500/5 hover:bg-indigo-500/15 active:bg-indigo-600/25 transition-colors z-20 rounded-r-3xl hidden md:flex items-center justify-center"
+            title="Drag right edge to resize"
+          >
+            <div className="w-1 h-8 rounded-full bg-slate-300 dark:bg-slate-700 opacity-0 group-hover/widget:opacity-100 transition-opacity flex flex-col gap-1 justify-between py-1">
+              <span className="w-1 h-1 rounded-full bg-slate-400 dark:bg-slate-500" />
+              <span className="w-1 h-1 rounded-full bg-slate-400 dark:bg-slate-500" />
+              <span className="w-1 h-1 rounded-full bg-slate-400 dark:bg-slate-500" />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (widgetId === 'deposits') {
+      const deposits = data.fixedDeposits || [];
+      return (
+        <div key="deposits" {...containerProps}>
+          {renderControls()}
+          <GlassCard hoverable onClick={() => setActiveTab('deposits')} className="cursor-pointer flex flex-col justify-between h-full relative overflow-hidden pt-14 px-6 pb-6">
+            <div>
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                    <RupeeCoin className="h-3 w-3 text-amber-500" />
+                    Fixed Deposits / CDs
+                  </h4>
+                  <h3 className="text-xl sm:text-2xl font-display font-black text-slate-900 dark:text-slate-100 mt-1 whitespace-nowrap">
+                    {formatCurrency(totalFDPrincipal)}
+                  </h3>
+                </div>
+                <div className="text-[9px] bg-amber-500/10 text-amber-600 font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider shrink-0">
+                  {deposits.length} FDs
+                </div>
+              </div>
+
+              {deposits.length === 0 ? (
+                <div className="py-6 text-center text-xs text-slate-400 font-medium">
+                  No fixed deposits tracked yet. Click to record one.
+                </div>
+              ) : (
+                <div className={`mt-4 ${size === 1 ? 'space-y-2 max-h-[140px] overflow-y-auto' : 'grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[220px] overflow-y-auto'} pr-1`}>
+                  {deposits.slice(0, size === 1 ? 3 : 6).map((fd, idx) => {
+                    let progressPct = 50; // Default if dates are missing
+                    if (fd.startDate && fd.maturityDate) {
+                      const sTime = new Date(fd.startDate).getTime();
+                      const mTime = new Date(fd.maturityDate).getTime();
+                      const nowTime = new Date().getTime();
+                      if (mTime > sTime && nowTime > sTime) {
+                        progressPct = Math.min(100, Math.max(0, ((nowTime - sTime) / (mTime - sTime)) * 100));
+                      }
+                    }
+                    return (
+                      <div key={fd.id || idx} className="p-2.5 rounded-xl border transition-all text-xs bg-white/30 dark:bg-slate-800/20 border-white/20 dark:border-white/5 hover:bg-white/50 flex flex-col justify-between">
+                        <div className="flex justify-between items-start gap-2">
+                          <div className="min-w-0">
+                            <span className="font-bold block truncate text-slate-850 dark:text-slate-100">{fd.bankName}</span>
+                            <span className="text-[9px] text-slate-500 dark:text-slate-400 block truncate whitespace-nowrap">
+                              {fd.interestRate.toFixed(2)}% APY • Due: {fd.maturityDate || 'N/A'}
+                            </span>
+                          </div>
+                          <div className="text-right shrink-0 font-mono font-bold text-slate-900 dark:text-slate-50">
+                            {formatCurrency(convertCurrency(fd.principal, fd.currency || 'INR', selectedCurrency))}
+                          </div>
+                        </div>
+                        {size > 1 && (
+                          <div className="mt-2.5 pt-2 border-t border-slate-200/10">
+                            <div className="flex justify-between text-[8px] text-slate-400 font-semibold mb-1">
+                              <span>Maturity Progress</span>
+                              <span>{progressPct.toFixed(0)}%</span>
+                            </div>
+                            <div className="w-full bg-slate-200/30 dark:bg-slate-700/30 h-1 rounded-full overflow-hidden">
+                              <div className="bg-amber-500 h-full rounded-full" style={{ width: `${progressPct}%` }} />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            <div className="mt-4 pt-3 border-t border-slate-200/20 flex justify-between items-center text-[10px] font-semibold text-indigo-800 dark:text-indigo-400">
+              <span className="uppercase tracking-wider truncate mr-1">Secured Income</span>
+              <button 
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setActiveTab('deposits'); }}
+                className="flex items-center gap-0.5 hover:underline text-indigo-600 dark:text-indigo-300 font-bold cursor-pointer bg-transparent border-none p-0 shrink-0"
+              >
+                View Deposits <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </GlassCard>
+          {/* Resize drag handle */}
+          <div 
+            onMouseDown={(e) => handleResizeStart(e, 'deposits')}
+            className="absolute top-0 right-0 bottom-0 w-3 cursor-col-resize group-hover/widget:bg-indigo-500/5 hover:bg-indigo-500/15 active:bg-indigo-600/25 transition-colors z-20 rounded-r-3xl hidden md:flex items-center justify-center"
+            title="Drag right edge to resize"
+          >
+            <div className="w-1 h-8 rounded-full bg-slate-300 dark:bg-slate-700 opacity-0 group-hover/widget:opacity-100 transition-opacity flex flex-col gap-1 justify-between py-1">
+              <span className="w-1 h-1 rounded-full bg-slate-400 dark:bg-slate-500" />
+              <span className="w-1 h-1 rounded-full bg-slate-400 dark:bg-slate-500" />
+              <span className="w-1 h-1 rounded-full bg-slate-400 dark:bg-slate-500" />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (widgetId === 'liabilities') {
+      const liabilitiesList = data.liabilities || [];
+      const totalMonthlyRepayment = liabilitiesList.reduce((sum, item) => sum + convertCurrency(item.monthlyPayment || 0, item.currency || 'INR', selectedCurrency), 0);
+      return (
+        <div key="liabilities" {...containerProps}>
+          {renderControls()}
+          <GlassCard hoverable onClick={() => setActiveTab('liabilities')} className="cursor-pointer flex flex-col justify-between h-full relative overflow-hidden pt-14 px-6 pb-6">
+            <div>
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                    <TrendingUp className="h-3 w-3 text-rose-500 rotate-180" />
+                    Outstanding Debt
+                  </h4>
+                  <h3 className="text-xl sm:text-2xl font-display font-black text-rose-600 dark:text-rose-400 mt-1 whitespace-nowrap">
+                    {formatCurrency(totalLiabilities)}
+                  </h3>
+                </div>
+                <div className="text-[9px] bg-rose-500/10 text-rose-500 font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider shrink-0">
+                  {liabilitiesList.length} Debts
+                </div>
+              </div>
+
+              {liabilitiesList.length === 0 ? (
+                <div className="py-6 text-center text-xs text-slate-400 font-medium">
+                  No liability accounts tracked. Click to record debt.
+                </div>
+              ) : (
+                <div className={`mt-4 ${size === 1 ? 'space-y-2 max-h-[140px] overflow-y-auto' : 'grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[220px] overflow-y-auto'} pr-1`}>
+                  {liabilitiesList.slice(0, size === 1 ? 3 : 6).map((item, idx) => {
+                    const original = item.totalAmount || item.outstandingAmount || 1;
+                    const paidOffPct = Math.min(100, Math.max(0, ((original - item.outstandingAmount) / original) * 100));
+                    return (
+                      <div key={item.id || idx} className="p-2.5 rounded-xl border transition-all text-xs bg-white/30 dark:bg-slate-800/20 border-white/20 dark:border-white/5 hover:bg-white/50 flex flex-col justify-between">
+                        <div className="flex justify-between items-start gap-2">
+                          <div className="min-w-0">
+                            <span className="font-bold block truncate text-slate-850 dark:text-slate-100">{item.lenderName}</span>
+                            <span className="text-[9px] text-slate-500 dark:text-slate-400 block truncate whitespace-nowrap">
+                              {item.liabilityType} • {item.interestRate.toFixed(2)}%
+                            </span>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <span className="font-mono font-bold block whitespace-nowrap text-rose-600 dark:text-rose-400">
+                              {formatCurrency(convertCurrency(item.outstandingAmount, item.currency || 'INR', selectedCurrency))}
+                            </span>
+                            <span className="text-[8px] text-slate-400 dark:text-slate-500 block font-sans">
+                              EMI: {formatCurrency(convertCurrency(item.monthlyPayment || 0, item.currency || 'INR', selectedCurrency))}
+                            </span>
+                          </div>
+                        </div>
+                        {size > 1 && (
+                          <div className="mt-2.5 pt-2 border-t border-slate-200/10">
+                            <div className="flex justify-between text-[8px] text-slate-400 font-semibold mb-1">
+                              <span>Paid Off Progress</span>
+                              <span>{paidOffPct.toFixed(0)}%</span>
+                            </div>
+                            <div className="w-full bg-slate-200/30 dark:bg-slate-700/30 h-1 rounded-full overflow-hidden">
+                              <div className="bg-rose-500 h-full rounded-full" style={{ width: `${paidOffPct}%` }} />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            <div className="mt-4 pt-3 border-t border-slate-200/20 flex justify-between items-center text-[10px] font-semibold text-rose-800 dark:text-rose-455">
+              <span className="uppercase tracking-wider truncate mr-1">EMI Burden: {formatCurrency(totalMonthlyRepayment)}/mo</span>
+              <button 
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setActiveTab('liabilities'); }}
+                className="flex items-center gap-0.5 hover:underline text-indigo-600 dark:text-indigo-300 font-bold cursor-pointer bg-transparent border-none p-0 shrink-0"
+              >
+                View Ledger <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </GlassCard>
+          {/* Resize drag handle */}
+          <div 
+            onMouseDown={(e) => handleResizeStart(e, 'liabilities')}
+            className="absolute top-0 right-0 bottom-0 w-3 cursor-col-resize group-hover/widget:bg-indigo-500/5 hover:bg-indigo-500/15 active:bg-indigo-600/25 transition-colors z-20 rounded-r-3xl hidden md:flex items-center justify-center"
+            title="Drag right edge to resize"
+          >
+            <div className="w-1 h-8 rounded-full bg-slate-300 dark:bg-slate-700 opacity-0 group-hover/widget:opacity-100 transition-opacity flex flex-col gap-1 justify-between py-1">
+              <span className="w-1 h-1 rounded-full bg-slate-400 dark:bg-slate-500" />
+              <span className="w-1 h-1 rounded-full bg-slate-400 dark:bg-slate-500" />
+              <span className="w-1 h-1 rounded-full bg-slate-400 dark:bg-slate-500" />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return null;
   };
 
@@ -1207,19 +1532,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, setActiveTab
       </div>
 
       {/* Overview Cards Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-8 gap-4">
         {/* Net Worth Card */}
         <GlassCard className="col-span-1 sm:col-span-2 lg:col-span-3 xl:col-span-1 bg-gradient-to-br from-indigo-500/20 to-violet-500/10 border-indigo-200/30 flex flex-col justify-between p-5 min-h-[145px]">
           <div>
             <div className="flex justify-between items-center">
-              <span className="text-slate-500 dark:text-slate-300 text-[10px] font-bold tracking-wider uppercase truncate mr-1">Net Portfolio Value</span>
+              <span className="text-slate-500 dark:text-slate-300 text-[10px] font-bold tracking-wider uppercase mr-1">Estimated Net Worth</span>
               <div className="p-2 bg-indigo-500/15 rounded-xl border border-indigo-500/20 text-indigo-700 dark:text-indigo-300 shrink-0">
                 <TrendingUp className="h-4 w-4" />
               </div>
             </div>
             <div className="mt-4">
-              <h2 className="text-2xl font-display font-black text-slate-900 dark:text-slate-100 tracking-tight truncate" title={formatCurrency(totalPortfolioValue)}>
-                {formatCurrency(totalPortfolioValue)}
+              <h2 className="text-xl sm:text-2xl font-display font-black text-slate-900 dark:text-slate-100 tracking-tight whitespace-nowrap" title={formatCurrency(netWorthValue)}>
+                {formatCurrency(netWorthValue)}
               </h2>
             </div>
           </div>
@@ -1228,8 +1553,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, setActiveTab
               {overallProfit >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
               {overallProfit >= 0 ? '+' : ''}{overallProfitPercent.toFixed(1)}%
             </span>
-            <span className="text-slate-500 dark:text-slate-400 truncate" title={`Returns: ${formatCurrency(overallProfit)}`}>
-              Ret: {formatCurrency(overallProfit)}
+            <span className="text-slate-500 dark:text-slate-400 break-words font-semibold" title={`Assets: ${formatCurrency(totalPortfolioValue)}, Debt: ${formatCurrency(totalLiabilities)}`}>
+              Assets: {formatCurrency(totalPortfolioValue)}
             </span>
           </div>
         </GlassCard>
@@ -1238,19 +1563,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, setActiveTab
         <GlassCard hoverable onClick={() => setActiveTab('savings')} className="cursor-pointer flex flex-col justify-between p-5 min-h-[145px]">
           <div>
             <div className="flex justify-between items-center">
-              <span className="text-slate-500 dark:text-slate-300 text-[10px] font-bold tracking-wider uppercase truncate mr-1">Bank Savings</span>
-              <div className="p-2 bg-sky-500/15 rounded-xl text-sky-700 dark:text-sky-350 shrink-0">
+              <span className="text-slate-500 dark:text-slate-300 text-[10px] font-bold tracking-wider uppercase mr-1">Bank Savings</span>
+              <div className="p-2 bg-sky-500/15 rounded-xl text-sky-700 dark:text-sky-355 shrink-0">
                 <Landmark className="h-4 w-4" />
               </div>
             </div>
             <div className="mt-4">
-              <h3 className="text-2xl font-display font-black text-slate-900 dark:text-slate-100 tracking-tight truncate" title={formatCurrency(totalSavings)}>
+              <h3 className="text-xl sm:text-2xl font-display font-black text-slate-900 dark:text-slate-100 tracking-tight whitespace-nowrap" title={formatCurrency(totalSavings)}>
                 {formatCurrency(totalSavings)}
               </h3>
             </div>
           </div>
           <div className="flex items-center justify-between mt-4 text-[10px] text-slate-500 pt-2 border-t border-slate-200/20 font-medium font-sans">
-            <span className="truncate">{data.bankSavings.length} Accounts</span>
+            <span className="break-words">{data.bankSavings.length} Accounts</span>
             <span 
               onClick={(e) => { e.stopPropagation(); setActiveTab('savings'); }}
               className="font-bold text-indigo-850 dark:text-indigo-300 flex items-center hover:underline cursor-pointer shrink-0"
@@ -1264,19 +1589,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, setActiveTab
         <GlassCard hoverable onClick={() => setActiveTab('deposits')} className="cursor-pointer flex flex-col justify-between p-5 min-h-[145px]">
           <div>
             <div className="flex justify-between items-center">
-              <span className="text-slate-500 dark:text-slate-300 text-[10px] font-bold tracking-wider uppercase truncate mr-1">Fixed Deposits</span>
-              <div className="p-2 bg-amber-500/15 rounded-xl text-amber-700 dark:text-amber-350 shrink-0">
+              <span className="text-slate-500 dark:text-slate-300 text-[10px] font-bold tracking-wider uppercase mr-1">Fixed Deposits</span>
+              <div className="p-2 bg-amber-500/15 rounded-xl text-amber-700 dark:text-amber-355 shrink-0">
                 <RupeeCoin className="h-4 w-4" />
               </div>
             </div>
             <div className="mt-4">
-              <h3 className="text-2xl font-display font-black text-slate-900 dark:text-slate-100 tracking-tight truncate" title={formatCurrency(totalFDValue)}>
+              <h3 className="text-xl sm:text-2xl font-display font-black text-slate-900 dark:text-slate-100 tracking-tight whitespace-nowrap" title={formatCurrency(totalFDValue)}>
                 {formatCurrency(totalFDValue)}
               </h3>
             </div>
           </div>
           <div className="flex items-center justify-between mt-4 text-[10px] text-slate-500 pt-2 border-t border-slate-200/20 font-medium font-sans">
-            <span className="truncate">{data.fixedDeposits.length} Active CDs</span>
+            <span className="break-words">{data.fixedDeposits.length} Active CDs</span>
             <span 
               onClick={(e) => { e.stopPropagation(); setActiveTab('deposits'); }}
               className="font-bold text-indigo-850 dark:text-indigo-300 flex items-center hover:underline cursor-pointer shrink-0"
@@ -1286,23 +1611,51 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, setActiveTab
           </div>
         </GlassCard>
 
+        {/* Mutual Funds Card */}
+        <GlassCard hoverable onClick={() => setActiveTab('funds')} className="cursor-pointer flex flex-col justify-between p-5 min-h-[145px]">
+          <div>
+            <div className="flex justify-between items-center">
+              <span className="text-slate-500 dark:text-slate-300 text-[10px] font-bold tracking-wider uppercase mr-1">Mutual Funds</span>
+              <div className="p-2 bg-indigo-500/15 rounded-xl text-indigo-700 dark:text-indigo-355 shrink-0">
+                <Layers className="h-4 w-4" />
+              </div>
+            </div>
+            <div className="mt-4">
+              <h3 className="text-xl sm:text-2xl font-display font-black text-slate-900 dark:text-slate-100 tracking-tight whitespace-nowrap" title={formatCurrency(totalMutualFundsCurrent)}>
+                {formatCurrency(totalMutualFundsCurrent)}
+              </h3>
+            </div>
+          </div>
+          <div className="flex items-center justify-between mt-4 text-[10px] text-slate-500 pt-2 border-t border-slate-200/20 font-medium font-sans">
+            <span className={`break-words font-semibold ${mutualFundsProfit >= 0 ? 'text-emerald-600 dark:text-emerald-450' : 'text-rose-600 dark:text-rose-400'}`}>
+              {mutualFundsProfit >= 0 ? '+' : ''}{mutualFundsProfitPercent.toFixed(1)}% Return
+            </span>
+            <span 
+              onClick={(e) => { e.stopPropagation(); setActiveTab('funds'); }}
+              className="font-bold text-indigo-850 dark:text-indigo-300 flex items-center hover:underline cursor-pointer shrink-0"
+            >
+              Growth <ChevronRight className="h-3 w-3" />
+            </span>
+          </div>
+        </GlassCard>
+
         {/* Landed Estates Card */}
         <GlassCard hoverable onClick={() => setActiveTab('terrafirma')} className="cursor-pointer flex flex-col justify-between p-5 min-h-[145px]">
           <div>
             <div className="flex justify-between items-center">
-              <span className="text-slate-500 dark:text-slate-300 text-[10px] font-bold tracking-wider uppercase truncate mr-1">Landed Estates</span>
-              <div className="p-2 bg-pink-500/15 rounded-xl text-pink-750 dark:text-pink-350 shrink-0">
+              <span className="text-slate-500 dark:text-slate-300 text-[10px] font-bold tracking-wider uppercase mr-1">Landed Estates</span>
+              <div className="p-2 bg-pink-500/15 rounded-xl text-pink-750 dark:text-pink-355 shrink-0">
                 <Building2 className="h-4 w-4" />
               </div>
             </div>
             <div className="mt-4">
-              <h3 className="text-2xl font-display font-black text-slate-900 dark:text-slate-100 tracking-tight truncate" title={formatCurrency(totalLandedEstates)}>
+              <h3 className="text-xl sm:text-2xl font-display font-black text-slate-900 dark:text-slate-100 tracking-tight whitespace-nowrap" title={formatCurrency(totalLandedEstates)}>
                 {formatCurrency(totalLandedEstates)}
               </h3>
             </div>
           </div>
           <div className="flex items-center justify-between mt-4 text-[10px] text-slate-500 pt-2 border-t border-slate-200/20 font-medium font-sans">
-            <span className="truncate">{(data.immovableAssets || []).length} Holdings</span>
+            <span className="break-words">{(data.immovableAssets || []).length} Holdings</span>
             <span 
               onClick={(e) => { e.stopPropagation(); setActiveTab('terrafirma'); }}
               className="font-bold text-indigo-850 dark:text-indigo-300 flex items-center hover:underline cursor-pointer shrink-0"
@@ -1316,19 +1669,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, setActiveTab
         <GlassCard hoverable onClick={() => setActiveTab('precious')} className="cursor-pointer flex flex-col justify-between p-5 min-h-[145px]">
           <div>
             <div className="flex justify-between items-center">
-              <span className="text-slate-500 dark:text-slate-300 text-[10px] font-bold tracking-wider uppercase truncate mr-1">Gold & Ornaments</span>
-              <div className="p-2 bg-yellow-500/15 rounded-xl text-yellow-700 dark:text-yellow-350 shrink-0">
+              <span className="text-slate-500 dark:text-slate-300 text-[10px] font-bold tracking-wider uppercase mr-1">Gold & Ornaments</span>
+              <div className="p-2 bg-yellow-500/15 rounded-xl text-yellow-700 dark:text-yellow-355 shrink-0">
                 <Coins className="h-4 w-4 text-yellow-600 animate-pulse" />
               </div>
             </div>
             <div className="mt-4">
-              <h3 className="text-2xl font-display font-black text-slate-900 dark:text-slate-100 tracking-tight truncate" title={formatCurrency(totalPreciousValue)}>
+              <h3 className="text-xl sm:text-2xl font-display font-black text-slate-900 dark:text-slate-100 tracking-tight whitespace-nowrap" title={formatCurrency(totalPreciousValue)}>
                 {formatCurrency(totalPreciousValue)}
               </h3>
             </div>
           </div>
           <div className="flex items-center justify-between mt-4 text-[10px] text-slate-500 pt-2 border-t border-slate-200/20 font-medium font-sans">
-            <span className="truncate">{(data.preciousAssets || []).length} Reserves</span>
+            <span className="break-words">{(data.preciousAssets || []).length} Reserves</span>
             <span 
               onClick={(e) => { e.stopPropagation(); setActiveTab('precious'); }}
               className="font-bold text-indigo-850 dark:text-indigo-300 flex items-center hover:underline cursor-pointer shrink-0"
@@ -1342,24 +1695,50 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, setActiveTab
         <GlassCard hoverable onClick={() => setActiveTab('insurances')} className="cursor-pointer flex flex-col justify-between p-5 min-h-[145px]">
           <div>
             <div className="flex justify-between items-center">
-              <span className="text-slate-500 dark:text-slate-300 text-[10px] font-bold tracking-wider uppercase truncate mr-1">Active Coverage</span>
-              <div className="p-2 bg-emerald-500/15 rounded-xl text-emerald-700 dark:text-emerald-350 shrink-0">
+              <span className="text-slate-500 dark:text-slate-300 text-[10px] font-bold tracking-wider uppercase mr-1">Active Coverage</span>
+              <div className="p-2 bg-emerald-500/15 rounded-xl text-emerald-700 dark:text-emerald-355 shrink-0">
                 <ShieldCheck className="h-4 w-4" />
               </div>
             </div>
             <div className="mt-4">
-              <h3 className="text-2xl font-display font-black text-slate-900 dark:text-slate-100 tracking-tight truncate" title={formatCurrency(totalInsuranceCover)}>
+              <h3 className="text-xl sm:text-2xl font-display font-black text-slate-900 dark:text-slate-100 tracking-tight whitespace-nowrap" title={formatCurrency(totalInsuranceCover)}>
                 {formatCurrency(totalInsuranceCover)}
               </h3>
             </div>
           </div>
           <div className="flex items-center justify-between mt-4 text-[10px] text-slate-500 pt-2 border-t border-slate-200/20 font-medium font-sans">
-            <span className="truncate">Prem: {formatCurrency(totalMonthlyPremium)}/mo</span>
+            <span className="break-words">Prem: {formatCurrency(totalMonthlyPremium)}/mo</span>
             <span 
               onClick={(e) => { e.stopPropagation(); setActiveTab('insurances'); }}
               className="font-bold text-indigo-850 dark:text-indigo-300 flex items-center hover:underline cursor-pointer shrink-0"
             >
               Manage <ChevronRight className="h-3 w-3" />
+            </span>
+          </div>
+        </GlassCard>
+
+        {/* Liabilities Card */}
+        <GlassCard hoverable onClick={() => setActiveTab('liabilities')} className="cursor-pointer flex flex-col justify-between p-5 min-h-[145px] border-rose-500/15 dark:border-rose-500/30 bg-rose-500/5 hover:bg-rose-500/10 dark:bg-rose-950/20 dark:hover:bg-rose-950/30 transition-all">
+          <div>
+            <div className="flex justify-between items-center">
+              <span className="text-slate-500 dark:text-slate-300 text-[10px] font-bold tracking-wider uppercase mr-1">Outstanding Debt</span>
+              <div className="p-2 bg-rose-500/15 rounded-xl text-rose-700 dark:text-rose-300 shrink-0">
+                <TrendingUp className="h-4 w-4 rotate-180" />
+              </div>
+            </div>
+            <div className="mt-4">
+              <h3 className="text-xl sm:text-2xl font-display font-black text-rose-600 dark:text-rose-400 tracking-tight whitespace-nowrap" title={formatCurrency(totalLiabilities)}>
+                {formatCurrency(totalLiabilities)}
+              </h3>
+            </div>
+          </div>
+          <div className="flex items-center justify-between mt-4 text-[10px] text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-200/20 font-medium font-sans">
+            <span className="break-words">{(data.liabilities || []).length} Debts</span>
+            <span 
+              onClick={(e) => { e.stopPropagation(); setActiveTab('liabilities'); }}
+              className="font-bold text-indigo-850 dark:text-indigo-300 flex items-center hover:underline cursor-pointer shrink-0"
+            >
+              Ledger <ChevronRight className="h-3 w-3" />
             </span>
           </div>
         </GlassCard>

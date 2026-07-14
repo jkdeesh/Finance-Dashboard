@@ -10,7 +10,6 @@ import {
   TrendingUp, 
   BarChart4, 
   Percent, 
-  DollarSign, 
   X, 
   Check, 
   AlertCircle,
@@ -50,6 +49,7 @@ export const MutualFundsView: React.FC<MutualFundsViewProps> = ({
   const [averageNav, setAverageNav] = useState('');
   const [currentNav, setCurrentNav] = useState('');
   const [fundCurrency, setFundCurrency] = useState<CurrencyCode>('INR');
+  const [investmentType, setInvestmentType] = useState<'Lumpsum' | 'SIP' | 'SWP' | 'Other'>('Lumpsum');
   
   const [formError, setFormError] = useState('');
   const [deletingFund, setDeletingFund] = useState<MutualFund | null>(null);
@@ -72,6 +72,7 @@ export const MutualFundsView: React.FC<MutualFundsViewProps> = ({
     setAverageNav('');
     setCurrentNav('');
     setFundCurrency(selectedCurrency);
+    setInvestmentType('Lumpsum');
     setFormError('');
     setEditingId(null);
     setIsFormOpen(false);
@@ -85,6 +86,7 @@ export const MutualFundsView: React.FC<MutualFundsViewProps> = ({
     setAverageNav(f.averageNav.toString());
     setCurrentNav(f.currentNav.toString());
     setFundCurrency(f.currency || 'INR');
+    setInvestmentType(f.investmentType || 'Lumpsum');
     setIsFormOpen(true);
   };
 
@@ -119,7 +121,8 @@ export const MutualFundsView: React.FC<MutualFundsViewProps> = ({
       currency: fundCurrency,
       ownerIds: editingId
         ? funds.find(f => f.id === editingId)?.ownerIds || []
-        : (selectedUserIds && selectedUserIds.length > 0 ? [selectedUserIds[0]] : ['jagadeesh'])
+        : (selectedUserIds && selectedUserIds.length > 0 ? [selectedUserIds[0]] : ['jagadeesh']),
+      investmentType
     };
 
     if (editingId) {
@@ -181,42 +184,42 @@ export const MutualFundsView: React.FC<MutualFundsViewProps> = ({
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <GlassCard className="flex items-center gap-4">
-          <div className="p-3 bg-slate-500/10 rounded-2xl text-slate-700 dark:text-slate-300 border border-slate-500/10">
-            <DollarSign className="h-6 w-6" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <GlassCard className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-4 sm:p-5">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-slate-500/10 rounded-2xl text-slate-700 dark:text-slate-300 border border-slate-500/10 font-display font-extrabold text-lg sm:text-xl select-none shrink-0">
+            {currencyConfig.symbol}
           </div>
-          <div>
-            <span className="text-slate-500 dark:text-slate-300 text-xs font-bold tracking-wider uppercase block">Total Cost Basis</span>
-            <span className="text-xl font-display font-bold text-slate-900 dark:text-slate-100">
+          <div className="min-w-0 w-full">
+            <span className="text-slate-500 dark:text-slate-300 text-[10px] sm:text-xs font-bold tracking-wider uppercase block" title="Total Cost Basis">Total Cost Basis</span>
+            <span className="text-lg sm:text-xl font-display font-bold text-slate-900 dark:text-slate-100 block whitespace-nowrap">
               {formatCurrency(totalInvested)}
             </span>
           </div>
         </GlassCard>
 
-        <GlassCard className="flex items-center gap-4">
-          <div className="p-3 bg-indigo-500/10 rounded-2xl text-indigo-700 dark:text-indigo-400 border border-indigo-500/10">
-            <TrendingUp className="h-6 w-6" />
+        <GlassCard className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-4 sm:p-5">
+          <div className="p-2.5 bg-indigo-500/10 rounded-2xl text-indigo-700 dark:text-indigo-400 border border-indigo-500/10 shrink-0">
+            <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6" />
           </div>
-          <div>
-            <span className="text-slate-500 dark:text-slate-300 text-xs font-bold tracking-wider uppercase block">Current Market Value</span>
-            <span className="text-xl font-display font-bold text-slate-900 dark:text-slate-100">
+          <div className="min-w-0 w-full">
+            <span className="text-slate-500 dark:text-slate-300 text-[10px] sm:text-xs font-bold tracking-wider uppercase block" title="Current Market Value">Current Market Value</span>
+            <span className="text-lg sm:text-xl font-display font-bold text-slate-900 dark:text-slate-100 block whitespace-nowrap">
               {formatCurrency(totalCurrent)}
             </span>
           </div>
         </GlassCard>
 
-        <GlassCard className="flex items-center gap-4 col-span-1 lg:col-span-2">
-          <div className={`p-3 rounded-2xl border ${totalGainLoss >= 0 ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/10' : 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/10'}`}>
-            {totalGainLoss >= 0 ? <TrendingUp className="h-6 w-6" /> : <TrendingDown className="h-6 w-6" />}
+        <GlassCard className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-4 sm:p-5 col-span-1 sm:col-span-2">
+          <div className={`p-2.5 rounded-2xl border shrink-0 ${totalGainLoss >= 0 ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/10' : 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/10'}`}>
+            {totalGainLoss >= 0 ? <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6" /> : <TrendingDown className="h-5 w-5 sm:h-6 sm:w-6" />}
           </div>
-          <div>
-            <span className="text-slate-500 dark:text-slate-300 text-xs font-bold tracking-wider uppercase block">Total Net Returns</span>
-            <div className="flex items-center gap-2">
-              <span className={`text-xl font-display font-extrabold ${totalGainLoss >= 0 ? 'text-emerald-800 dark:text-emerald-400' : 'text-rose-800 dark:text-rose-400'}`}>
+          <div className="min-w-0 w-full">
+            <span className="text-slate-500 dark:text-slate-300 text-[10px] sm:text-xs font-bold tracking-wider uppercase block" title="Total Net Returns">Total Net Returns</span>
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+              <span className={`text-lg sm:text-xl font-display font-extrabold whitespace-nowrap ${totalGainLoss >= 0 ? 'text-emerald-800 dark:text-emerald-400' : 'text-rose-800 dark:text-rose-400'}`}>
                 {totalGainLoss >= 0 ? '+' : ''}{formatCurrency(totalGainLoss)}
               </span>
-              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${totalGainLoss >= 0 ? 'bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 dark:bg-emerald-500/15' : 'bg-rose-500/20 text-rose-800 dark:text-rose-300 dark:bg-rose-500/15'}`}>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${totalGainLoss >= 0 ? 'bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 dark:bg-emerald-500/15' : 'bg-rose-500/20 text-rose-800 dark:text-rose-300 dark:bg-rose-500/15'}`}>
                 {totalGainLoss >= 0 ? '+' : ''}{totalReturnPercent.toFixed(2)}%
               </span>
             </div>
@@ -257,7 +260,7 @@ export const MutualFundsView: React.FC<MutualFundsViewProps> = ({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-slate-600 font-semibold mb-1">Category</label>
                   <select
@@ -270,6 +273,20 @@ export const MutualFundsView: React.FC<MutualFundsViewProps> = ({
                     <option value="Dividend Yield" className="bg-white text-slate-900 dark:bg-slate-800 dark:text-slate-100 font-medium">Dividend Yield</option>
                     <option value="Debt & Bond" className="bg-white text-slate-900 dark:bg-slate-800 dark:text-slate-100 font-medium">Debt & Bond</option>
                     <option value="Hybrid Balanced" className="bg-white text-slate-900 dark:bg-slate-800 dark:text-slate-100 font-medium">Hybrid Balanced</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-600 font-semibold mb-1">Investment Type *</label>
+                  <select
+                    value={investmentType}
+                    onChange={(e) => setInvestmentType(e.target.value as any)}
+                    className="w-full rounded-xl px-3 py-2.5 bg-white/50 border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none cursor-pointer text-slate-900 dark:text-slate-100"
+                  >
+                    <option value="Lumpsum" className="bg-white text-slate-900 dark:bg-slate-800 dark:text-slate-100 font-medium">Lumpsum (One-Time)</option>
+                    <option value="SIP" className="bg-white text-slate-900 dark:bg-slate-800 dark:text-slate-100 font-medium">SIP (Systematic Investment)</option>
+                    <option value="SWP" className="bg-white text-slate-900 dark:bg-slate-800 dark:text-slate-100 font-medium">SWP (Systematic Withdrawal)</option>
+                    <option value="Other" className="bg-white text-slate-900 dark:bg-slate-800 dark:text-slate-100 font-medium">Other</option>
                   </select>
                 </div>
 
@@ -419,6 +436,9 @@ export const MutualFundsView: React.FC<MutualFundsViewProps> = ({
                           <span className="px-2 py-0.5 rounded-full bg-slate-100/80 dark:bg-slate-800/85 text-slate-600 dark:text-slate-300 border border-slate-200/50 dark:border-slate-700/50 text-[9px] font-bold mt-1.5 inline-block whitespace-nowrap">
                             {fund.category}
                           </span>
+                          <span className="px-2 py-0.5 rounded-full bg-indigo-50/80 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200/50 dark:border-indigo-800/50 text-[9px] font-bold mt-1.5 ml-1.5 inline-block whitespace-nowrap uppercase">
+                            {fund.investmentType || 'Lumpsum'}
+                          </span>
                         </div>
                       </div>
                       
@@ -429,28 +449,28 @@ export const MutualFundsView: React.FC<MutualFundsViewProps> = ({
 
                     <div className="grid grid-cols-2 gap-4 py-2 border-y border-slate-200/10 text-xs font-mono">
                       <div className="min-w-0">
-                        <span className="text-slate-500 dark:text-slate-300 text-[10px] block uppercase font-sans font-semibold truncate">Cost Basis</span>
-                        <div className="text-slate-800 dark:text-slate-200 font-bold truncate">
+                        <span className="text-slate-500 dark:text-slate-300 text-[10px] block uppercase font-sans font-semibold">Cost Basis</span>
+                        <div className="text-slate-800 dark:text-slate-200 font-bold break-words">
                           {formatAccountCurrency(invested, fund.currency)}
                         </div>
                         {fund.currency && fund.currency !== selectedCurrency && (
-                          <div className="text-[9px] text-slate-500 dark:text-slate-400 font-semibold truncate">
+                          <div className="text-[9px] text-slate-500 dark:text-slate-400 font-semibold break-words">
                             ≈ {formatCurrency(convertCurrency(invested, fund.currency, selectedCurrency))}
                           </div>
                         )}
-                        <span className="text-slate-500 dark:text-slate-400 text-[9px] block font-sans mt-0.5 truncate">{fund.units} units @ {formatAccountCurrency(fund.averageNav, fund.currency)}</span>
+                        <span className="text-slate-500 dark:text-slate-400 text-[9px] block font-sans mt-0.5 break-words">{fund.units} units @ {formatAccountCurrency(fund.averageNav, fund.currency)}</span>
                       </div>
                       <div className="min-w-0">
-                        <span className="text-slate-500 dark:text-slate-300 text-[10px] block uppercase font-sans font-semibold truncate">Market Value</span>
-                        <div className="text-indigo-950 dark:text-indigo-100 font-extrabold truncate">
+                        <span className="text-slate-500 dark:text-slate-300 text-[10px] block uppercase font-sans font-semibold">Market Value</span>
+                        <div className="text-indigo-950 dark:text-indigo-100 font-extrabold break-words">
                           {formatAccountCurrency(currentVal, fund.currency)}
                         </div>
                         {fund.currency && fund.currency !== selectedCurrency && (
-                          <div className="text-[9px] text-slate-500 dark:text-slate-400 font-semibold truncate">
+                          <div className="text-[9px] text-slate-500 dark:text-slate-400 font-semibold break-words">
                             ≈ {formatCurrency(convertCurrency(currentVal, fund.currency, selectedCurrency))}
                           </div>
                         )}
-                        <span className="text-slate-500 dark:text-slate-400 text-[9px] block font-sans mt-0.5 truncate">Current NAV: {formatAccountCurrency(fund.currentNav, fund.currency)}</span>
+                        <span className="text-slate-500 dark:text-slate-400 text-[9px] block font-sans mt-0.5 break-words">Current NAV: {formatAccountCurrency(fund.currentNav, fund.currency)}</span>
                       </div>
                     </div>
                   </div>

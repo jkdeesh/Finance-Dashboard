@@ -28,7 +28,7 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { UserProfile, AssetData, BankAccount, FixedDeposit, MutualFund, ImmovableAsset, InsurancePolicy } from '../types';
+import { UserProfile, AssetData, BankAccount, FixedDeposit, MutualFund, ImmovableAsset, InsurancePolicy, PreciousAsset, Liability, CurrencyCode, CURRENCIES } from '../types';
 import * as XLSX from 'xlsx';
 
 function getRealDeviceInfo() {
@@ -95,6 +95,7 @@ function getRealLocationAndTZ() {
 }
 
 interface AccountTabViewProps {
+  selectedCurrency: CurrencyCode;
   loggedInAccount: { email: string; name?: string };
   onLogout: () => void;
   portfolios: UserProfile[];
@@ -105,6 +106,7 @@ interface AccountTabViewProps {
 }
 
 export const AccountTabView: React.FC<AccountTabViewProps> = ({
+  selectedCurrency,
   loggedInAccount,
   onLogout,
   portfolios,
@@ -127,6 +129,10 @@ export const AccountTabView: React.FC<AccountTabViewProps> = ({
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
+  // Email Simulation State
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [modalEmailContent, setModalEmailContent] = useState<any>(null);
+
   // Account Lifecycle State
   const [isDormant, setIsDormant] = useState(false);
   const [showDormancyModal, setShowDormancyModal] = useState(false);
@@ -140,6 +146,8 @@ export const AccountTabView: React.FC<AccountTabViewProps> = ({
 
   React.useEffect(() => {
     try {
+      const emailKey = loggedInAccount.email.replace(/[^a-zA-Z0-9]/g, '_');
+      
       const saved = localStorage.getItem('asset_tracker_registered_accounts');
       if (saved) {
         const accounts = JSON.parse(saved);
@@ -148,6 +156,15 @@ export const AccountTabView: React.FC<AccountTabViewProps> = ({
           setIsDormant(true);
         }
       }
+      
+      const tfa = localStorage.getItem(`asset_tracker_tfa_${emailKey}`);
+      if (tfa !== null) setTfaEnabled(tfa === 'true');
+      
+      const bio = localStorage.getItem(`asset_tracker_biometric_${emailKey}`);
+      if (bio !== null) setBiometricEnabled(bio === 'true');
+      
+      const notif = localStorage.getItem(`asset_tracker_notifications_${emailKey}`);
+      if (notif !== null) setNotifEnabled(notif === 'true');
     } catch (e) {
       console.error(e);
     }
@@ -218,8 +235,127 @@ export const AccountTabView: React.FC<AccountTabViewProps> = ({
   };
 
   const handleSaveSecurity = () => {
-    setIsSavedAlert(true);
-    setTimeout(() => setIsSavedAlert(false), 2000);
+    try {
+      const emailKey = loggedInAccount.email.replace(/[^a-zA-Z0-9]/g, '_');
+      localStorage.setItem(`asset_tracker_tfa_${emailKey}`, String(tfaEnabled));
+      localStorage.setItem(`asset_tracker_biometric_${emailKey}`, String(biometricEnabled));
+      localStorage.setItem(`asset_tracker_notifications_${emailKey}`, String(notifEnabled));
+      setIsSavedAlert(true);
+      setTimeout(() => setIsSavedAlert(false), 2000);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const getUpcomingAlerts = () => {
+    const today = new Date();
+    const list: Array<{ name: string; type: 'FD' | 'Insurance' | 'EMI' | 'Loan'; date: string; daysLeft: number; amount: number; currency: string }> = [];
+    
+    (assetData.fixedDeposits || []).forEach(fd => {
+      if (!fd.maturityDate) return;
+      const mDate = new Date(fd.maturityDate);
+      const diffTime = mDate.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      // Maturing within next 90 days
+      if (diffDays >= -10 && diffDays <= 90) {
+        list.push({
+          name: `${fd.bankName} Fixed Deposit (No: ${fd.depositNumber || 'N/A'})`,
+          type: 'FD',
+          date: fd.maturityDate,
+          daysLeft: diffDays,
+          amount: fd.principal,
+          currency: fd.currency || 'INR'
+        });
+      }
+    });
+
+    (assetData.insurances || []).forEach(ins => {
+      if (!ins.dueDate) return;
+      const dDate = new Date(ins.dueDate);
+      const diffTime = dDate.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      // Premium due within next 90 days
+      if (diffDays >= -10 && diffDays <= 90 && ins.status === 'Active') {
+        list.push({
+          name: `${ins.policyName} Premium (No: ${ins.policyNumber || 'N/A'})`,
+          type: 'Insurance',
+          date: ins.dueDate,
+          daysLeft: diffDays,
+          amount: ins.premiumAmount,
+          currency: ins.currency || 'INR'
+        });
+      }
+    });
+
+    // 1. Monthly EMI Payments & 2. Loan Maturities Alerts
+    (assetData.liabilities || []).forEach(loan => {
+      // 1. Monthly EMI Payment Due Alert (based on start date's day of month)
+      let dueDay = 5;
+      if (loan.startDate) {
+        const sDate = new Date(loan.startDate);
+        if (!isNaN(sDate.getTime())) {
+          dueDay = sDate.getDate();
+        }
+      }
+      
+      const currentYear = today.getFullYear();
+      const currentMonth = today.getMonth();
+      let emiDueDate = new Date(currentYear, currentMonth, dueDay);
+      
+      // If payment has already passed for this month, monitor next month's due date
+      if (emiDueDate.getTime() - today.getTime() < -2 * 24 * 60 * 60 * 1000) {
+        emiDueDate = new Date(currentYear, currentMonth + 1, dueDay);
+      }
+      
+      const diffTime = emiDueDate.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays >= -2 && diffDays <= 15 && loan.monthlyPayment > 0) {
+        list.push({
+          name: `Monthly EMI Due: ${loan.lenderName} (${loan.liabilityType})`,
+          type: 'EMI',
+          date: emiDueDate.toISOString().split('T')[0],
+          daysLeft: diffDays,
+          amount: loan.monthlyPayment,
+          currency: loan.currency || 'INR'
+        });
+      }
+
+      // 2. Loan Maturity / Termination Alert (within next 90 days)
+      if (loan.endDate) {
+        const eDate = new Date(loan.endDate);
+        if (!isNaN(eDate.getTime())) {
+          const diffMaturityTime = eDate.getTime() - today.getTime();
+          const diffMaturityDays = Math.ceil(diffMaturityTime / (1000 * 60 * 60 * 24));
+          
+          if (diffMaturityDays >= -10 && diffMaturityDays <= 90) {
+            list.push({
+              name: `Loan Account Maturity: ${loan.lenderName} (${loan.liabilityType})`,
+              type: 'Loan',
+              date: loan.endDate,
+              daysLeft: diffMaturityDays,
+              amount: loan.outstandingAmount,
+              currency: loan.currency || 'INR'
+            });
+          }
+        }
+      }
+    });
+
+    return list.sort((a, b) => a.daysLeft - b.daysLeft);
+  };
+
+  const handleTriggerSimulatedEmail = () => {
+    const alerts = getUpcomingAlerts();
+    const emailKey = loggedInAccount.email.replace(/[^a-zA-Z0-9]/g, '_');
+    
+    setModalEmailContent({
+      to: loggedInAccount.email,
+      subject: `🚨 [Asset Tracker] Maturity & Premium Alerts for your Family Portfolio`,
+      date: new Date().toLocaleString(),
+      alerts: alerts
+    });
+    setShowEmailModal(true);
   };
 
   const handleChangePassword = (e: React.FormEvent) => {
@@ -324,6 +460,7 @@ export const AccountTabView: React.FC<AccountTabViewProps> = ({
         'Units': mf.units || 0,
         'Average NAV': mf.averageNav || 0,
         'Current NAV': mf.currentNav || 0,
+        'Investment Type': mf.investmentType || 'Lumpsum',
         'Currency': mf.currency || 'INR',
         'Owner IDs': (mf.ownerIds || []).join(', ')
       }));
@@ -364,6 +501,38 @@ export const AccountTabView: React.FC<AccountTabViewProps> = ({
       }));
       const wsIns = XLSX.utils.json_to_sheet(insData);
       XLSX.utils.book_append_sheet(wb, wsIns, 'InsureShield');
+
+      // 6. Gold & Ornaments
+      const preciousData = (assetData.preciousAssets || []).map(p => ({
+        'Asset Name': p.name || '',
+        'Metal/Asset Type': p.type || 'Gold',
+        'Weight/Value': p.weight || 0,
+        'Unit': p.unit || 'grams',
+        'Purity/Karat': p.karat || p.purity || '',
+        'Purchase Price': p.purchasePrice || 0,
+        'Purchase Currency': p.purchaseCurrency || 'INR',
+        'Notes': p.notes || '',
+        'Owner IDs': (p.ownerIds || []).join(', ')
+      }));
+      const wsPrecious = XLSX.utils.json_to_sheet(preciousData);
+      XLSX.utils.book_append_sheet(wb, wsPrecious, 'Gold & Ornaments');
+
+      // 7. Liability Ledger (Loans & Debts)
+      const liabilityData = (assetData.liabilities || []).map(l => ({
+        'Lender Name': l.lenderName || '',
+        'Liability Type': l.liabilityType || 'Loan',
+        'Total Loan Amount': l.totalAmount || 0,
+        'Outstanding Amount': l.outstandingAmount || 0,
+        'Interest Rate (%)': l.interestRate || 0,
+        'Monthly EMI': l.monthlyPayment || 0,
+        'Start Date (YYYY-MM-DD)': l.startDate || '',
+        'End Date (YYYY-MM-DD)': l.endDate || '',
+        'Currency': l.currency || 'INR',
+        'Notes': l.notes || '',
+        'Owner IDs': (l.ownerIds || []).join(', ')
+      }));
+      const wsLiability = XLSX.utils.json_to_sheet(liabilityData);
+      XLSX.utils.book_append_sheet(wb, wsLiability, 'Liability Ledger');
       
       XLSX.writeFile(wb, 'Asset_Tracker_Backup.xlsx');
       setStatusMessage({
@@ -423,6 +592,7 @@ export const AccountTabView: React.FC<AccountTabViewProps> = ({
           'Units': 550,
           'Average NAV': 42.50,
           'Current NAV': 48.90,
+          'Investment Type': 'SIP',
           'Currency': 'INR',
           'Owner IDs': 'Ramesh, Anita'
         }
@@ -466,6 +636,64 @@ export const AccountTabView: React.FC<AccountTabViewProps> = ({
       ];
       const wsIns = XLSX.utils.json_to_sheet(insSample);
       XLSX.utils.book_append_sheet(wb, wsIns, 'InsureShield');
+
+      const preciousSample = [
+        {
+          'Asset Name': 'Bridal Gold Necklace',
+          'Metal/Asset Type': 'Gold',
+          'Weight/Value': 45,
+          'Unit': 'grams',
+          'Purity/Karat': '22K',
+          'Purchase Price': 225000,
+          'Purchase Currency': 'INR',
+          'Notes': 'Wedding Jewelry',
+          'Owner IDs': 'Anita'
+        },
+        {
+          'Asset Name': 'Heritage Diamond Ring',
+          'Metal/Asset Type': 'Diamond',
+          'Weight/Value': 1.5,
+          'Unit': 'carats',
+          'Purity/Karat': 'Round',
+          'Purchase Price': 180000,
+          'Purchase Currency': 'INR',
+          'Notes': 'Engagement Ring',
+          'Owner IDs': 'Ramesh'
+        }
+      ];
+      const wsPrecious = XLSX.utils.json_to_sheet(preciousSample);
+      XLSX.utils.book_append_sheet(wb, wsPrecious, 'Gold & Ornaments');
+
+      const liabilitySample = [
+        {
+          'Lender Name': 'HDFC Bank',
+          'Liability Type': 'Home Loan',
+          'Total Loan Amount': 4500000,
+          'Outstanding Amount': 3800000,
+          'Interest Rate (%)': 8.65,
+          'Monthly EMI': 35000,
+          'Start Date (YYYY-MM-DD)': '2023-01-15',
+          'End Date (YYYY-MM-DD)': '2038-01-15',
+          'Currency': 'INR',
+          'Notes': 'Apartment Mortgage',
+          'Owner IDs': 'Ramesh, Anita'
+        },
+        {
+          'Lender Name': 'ICICI Credit Card',
+          'Liability Type': 'Credit Card',
+          'Total Loan Amount': 150000,
+          'Outstanding Amount': 24000,
+          'Interest Rate (%)': 15.0,
+          'Monthly EMI': 5000,
+          'Start Date (YYYY-MM-DD)': '2025-01-01',
+          'End Date (YYYY-MM-DD)': '2025-12-31',
+          'Currency': 'INR',
+          'Notes': 'Laptop EMI',
+          'Owner IDs': 'Ramesh'
+        }
+      ];
+      const wsLiability = XLSX.utils.json_to_sheet(liabilitySample);
+      XLSX.utils.book_append_sheet(wb, wsLiability, 'Liability Ledger');
       
       XLSX.writeFile(wb, 'Asset_Tracker_Template.xlsx');
       setStatusMessage({
@@ -522,6 +750,8 @@ export const AccountTabView: React.FC<AccountTabViewProps> = ({
         let importedMF: MutualFund[] = [];
         let importedProp: ImmovableAsset[] = [];
         let importedIns: InsurancePolicy[] = [];
+        let importedPrecious: PreciousAsset[] = [];
+        let importedLiability: Liability[] = [];
         
         let parsedSomeSheet = false;
         
@@ -549,6 +779,8 @@ export const AccountTabView: React.FC<AccountTabViewProps> = ({
             const hasUnits = 'Units' in firstRow || 'units' in firstRow || 'Fund Name' in firstRow || 'Current NAV' in firstRow;
             const hasImmovable = 'Property Name' in firstRow || 'propertyName' in firstRow || ('Estimated Value' in firstRow && 'Area' in firstRow);
             const hasInsurance = 'Policy Name' in firstRow || 'policyName' in firstRow || 'Policy Number' in firstRow || 'Sum Assured' in firstRow;
+            const hasPrecious = 'Asset Name' in firstRow || 'assetName' in firstRow || 'Metal/Asset Type' in firstRow || 'Weight/Value' in firstRow;
+            const hasLiability = 'Lender Name' in firstRow || 'lenderName' in firstRow || 'Outstanding Amount' in firstRow || 'Monthly EMI' in firstRow;
             
             if (hasBalance && !hasPrincipal && !hasUnits) {
               importedBank = rows.map((row, idx) => ({
@@ -622,6 +854,42 @@ export const AccountTabView: React.FC<AccountTabViewProps> = ({
                 ownerIds: parseOwners(row['Owner IDs'] || row['ownerIds'])
               }));
               parsedSomeSheet = true;
+            } else if (hasPrecious) {
+              importedPrecious = rows.map((row, idx) => {
+                const karatVal = String(row['Purity/Karat'] || row['purity'] || row['karat'] || '');
+                const isGold = String(row['Metal/Asset Type'] || row['type'] || 'Gold').toLowerCase() === 'gold';
+                const isSilver = String(row['Metal/Asset Type'] || row['type'] || '').toLowerCase() === 'silver';
+                return {
+                  id: `precious-${Date.now()}-${idx}`,
+                  name: String(row['Asset Name'] || row['name'] || 'Unknown Ornament'),
+                  type: (row['Metal/Asset Type'] || row['type'] || 'Gold') as any,
+                  weight: Number(row['Weight/Value'] !== undefined ? row['Weight/Value'] : (row['weight'] !== undefined ? row['weight'] : 0)),
+                  unit: (row['Unit'] || row['unit'] || 'grams') as any,
+                  karat: isGold ? (karatVal as any) : undefined,
+                  purity: isSilver ? (karatVal as any) : undefined,
+                  purchasePrice: Number(row['Purchase Price'] !== undefined ? row['Purchase Price'] : (row['purchasePrice'] !== undefined ? row['purchasePrice'] : 0)),
+                  purchaseCurrency: (row['Purchase Currency'] || row['purchaseCurrency'] || 'INR') as any,
+                  notes: row['Notes'] || row['notes'] || undefined,
+                  ownerIds: parseOwners(row['Owner IDs'] || row['ownerIds'])
+                };
+              });
+              parsedSomeSheet = true;
+            } else if (hasLiability) {
+              importedLiability = rows.map((row, idx) => ({
+                id: `liability-${Date.now()}-${idx}`,
+                lenderName: String(row['Lender Name'] || row['lenderName'] || 'Unknown Lender'),
+                liabilityType: String(row['Liability Type'] || row['liabilityType'] || 'Loan') as any,
+                totalAmount: Number(row['Total Loan Amount'] !== undefined ? row['Total Loan Amount'] : (row['totalAmount'] !== undefined ? row['totalAmount'] : 0)),
+                outstandingAmount: Number(row['Outstanding Amount'] !== undefined ? row['Outstanding Amount'] : (row['outstandingAmount'] !== undefined ? row['outstandingAmount'] : 0)),
+                interestRate: Number(row['Interest Rate (%)'] !== undefined ? row['Interest Rate (%)'] : (row['interestRate'] !== undefined ? row['interestRate'] : 0)),
+                monthlyPayment: Number(row['Monthly EMI'] !== undefined ? row['Monthly EMI'] : (row['monthlyPayment'] !== undefined ? row['monthlyPayment'] : 0)),
+                startDate: String(row['Start Date (YYYY-MM-DD)'] || row['startDate'] || ''),
+                endDate: String(row['End Date (YYYY-MM-DD)'] || row['endDate'] || ''),
+                currency: (row['Currency'] || row['currency'] || 'INR') as any,
+                notes: row['Notes'] || row['notes'] || undefined,
+                ownerIds: parseOwners(row['Owner IDs'] || row['ownerIds'])
+              }));
+              parsedSomeSheet = true;
             }
           }
         } else {
@@ -671,6 +939,7 @@ export const AccountTabView: React.FC<AccountTabViewProps> = ({
               units: Number(row['Units'] !== undefined ? row['Units'] : (row['units'] !== undefined ? row['units'] : 0)),
               averageNav: Number(row['Average NAV'] !== undefined ? row['Average NAV'] : (row['averageNav'] !== undefined ? row['averageNav'] : 0)),
               currentNav: Number(row['Current NAV'] !== undefined ? row['Current NAV'] : (row['currentNav'] !== undefined ? row['currentNav'] : 0)),
+              investmentType: (row['Investment Type'] || row['investmentType'] || 'Lumpsum') as any,
               currency: (row['Currency'] || row['currency'] || 'INR') as any,
               ownerIds: parseOwners(row['Owner IDs'] || row['ownerIds'])
             }));
@@ -717,9 +986,54 @@ export const AccountTabView: React.FC<AccountTabViewProps> = ({
             }));
             parsedSomeSheet = true;
           }
+
+          const preciousSheetName = sheetNames.find(n => n.toLowerCase().includes('gold') || n.toLowerCase().includes('ornament') || n.toLowerCase().includes('precious') || n.toLowerCase() === 'precious');
+          if (preciousSheetName) {
+            const rows = XLSX.utils.sheet_to_json<any>(workbook.Sheets[preciousSheetName]);
+            importedPrecious = rows.map((row, idx) => {
+              const karatVal = String(row['Purity/Karat'] || row['purity'] || row['karat'] || '');
+              const isGold = String(row['Metal/Asset Type'] || row['type'] || 'Gold').toLowerCase() === 'gold';
+              const isSilver = String(row['Metal/Asset Type'] || row['type'] || '').toLowerCase() === 'silver';
+              
+              return {
+                id: `precious-${Date.now()}-${idx}`,
+                name: String(row['Asset Name'] || row['name'] || 'Unknown Ornament'),
+                type: (row['Metal/Asset Type'] || row['type'] || 'Gold') as any,
+                weight: Number(row['Weight/Value'] !== undefined ? row['Weight/Value'] : (row['weight'] !== undefined ? row['weight'] : 0)),
+                unit: (row['Unit'] || row['unit'] || 'grams') as any,
+                karat: isGold ? (karatVal as any) : undefined,
+                purity: isSilver ? (karatVal as any) : undefined,
+                purchasePrice: Number(row['Purchase Price'] !== undefined ? row['Purchase Price'] : (row['purchasePrice'] !== undefined ? row['purchasePrice'] : 0)),
+                purchaseCurrency: (row['Purchase Currency'] || row['purchaseCurrency'] || 'INR') as any,
+                notes: row['Notes'] || row['notes'] || undefined,
+                ownerIds: parseOwners(row['Owner IDs'] || row['ownerIds'])
+              };
+            });
+            parsedSomeSheet = true;
+          }
+
+          const liabilitySheetName = sheetNames.find(n => n.toLowerCase().includes('liabilit') || n.toLowerCase().includes('loan') || n.toLowerCase().includes('debt') || n.toLowerCase() === 'liability');
+          if (liabilitySheetName) {
+            const rows = XLSX.utils.sheet_to_json<any>(workbook.Sheets[liabilitySheetName]);
+            importedLiability = rows.map((row, idx) => ({
+              id: `liability-${Date.now()}-${idx}`,
+              lenderName: String(row['Lender Name'] || row['lenderName'] || 'Unknown Lender'),
+              liabilityType: String(row['Liability Type'] || row['liabilityType'] || 'Loan') as any,
+              totalAmount: Number(row['Total Loan Amount'] !== undefined ? row['Total Loan Amount'] : (row['totalAmount'] !== undefined ? row['totalAmount'] : 0)),
+              outstandingAmount: Number(row['Outstanding Amount'] !== undefined ? row['Outstanding Amount'] : (row['outstandingAmount'] !== undefined ? row['outstandingAmount'] : 0)),
+              interestRate: Number(row['Interest Rate (%)'] !== undefined ? row['Interest Rate (%)'] : (row['interestRate'] !== undefined ? row['interestRate'] : 0)),
+              monthlyPayment: Number(row['Monthly EMI'] !== undefined ? row['Monthly EMI'] : (row['monthlyPayment'] !== undefined ? row['monthlyPayment'] : 0)),
+              startDate: String(row['Start Date (YYYY-MM-DD)'] || row['startDate'] || ''),
+              endDate: String(row['End Date (YYYY-MM-DD)'] || row['endDate'] || ''),
+              currency: (row['Currency'] || row['currency'] || 'INR') as any,
+              notes: row['Notes'] || row['notes'] || undefined,
+              ownerIds: parseOwners(row['Owner IDs'] || row['ownerIds'])
+            }));
+            parsedSomeSheet = true;
+          }
         }
         
-        if (!parsedSomeSheet && importedBank.length === 0 && importedFD.length === 0 && importedMF.length === 0 && importedProp.length === 0 && importedIns.length === 0) {
+        if (!parsedSomeSheet && importedBank.length === 0 && importedFD.length === 0 && importedMF.length === 0 && importedProp.length === 0 && importedIns.length === 0 && importedPrecious.length === 0 && importedLiability.length === 0) {
           setStatusMessage({
             type: 'error',
             text: 'Could not find readable assets sheet/columns. Download the template for reference!'
@@ -734,7 +1048,9 @@ export const AccountTabView: React.FC<AccountTabViewProps> = ({
             fixedDeposits: importedFD,
             mutualFunds: importedMF,
             immovableAssets: importedProp,
-            insurances: importedIns
+            insurances: importedIns,
+            preciousAssets: importedPrecious,
+            liabilities: importedLiability
           };
         } else {
           mergedData = {
@@ -742,16 +1058,18 @@ export const AccountTabView: React.FC<AccountTabViewProps> = ({
             fixedDeposits: [...(assetData.fixedDeposits || []), ...importedFD],
             mutualFunds: [...(assetData.mutualFunds || []), ...importedMF],
             immovableAssets: [...((assetData as any).immovableAssets || []), ...importedProp],
-            insurances: [...((assetData as any).insurances || []), ...importedIns]
+            insurances: [...((assetData as any).insurances || []), ...importedIns],
+            preciousAssets: [...(assetData.preciousAssets || []), ...importedPrecious],
+            liabilities: [...((assetData as any).liabilities || []), ...importedLiability]
           };
         }
         
         onImportAssetData(mergedData);
         
-        const totalCount = importedBank.length + importedFD.length + importedMF.length + importedProp.length + importedIns.length;
+        const totalCount = importedBank.length + importedFD.length + importedMF.length + importedProp.length + importedIns.length + importedPrecious.length + importedLiability.length;
         setStatusMessage({
           type: 'success',
-          text: `Success! Imported ${totalCount} records (${importedBank.length} savings, ${importedFD.length} deposits, ${importedMF.length} funds, ${importedProp.length} estates, ${importedIns.length} insurances).`
+          text: `Success! Imported ${totalCount} records (${importedBank.length} savings, ${importedFD.length} deposits, ${importedMF.length} funds, ${importedProp.length} estates, ${importedIns.length} insurances, ${importedPrecious.length} ornaments, ${importedLiability.length} liabilities).`
         });
         setTimeout(() => setStatusMessage(null), 6000);
         
@@ -1175,6 +1493,34 @@ export const AccountTabView: React.FC<AccountTabViewProps> = ({
                   </motion.div>
                 )}
               </AnimatePresence>
+
+              {/* Active Email Monitor Info */}
+              {notifEnabled && (
+                <div className="mt-3.5 pt-3.5 border-t border-slate-200/50 dark:border-slate-800/40 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                      Maturity & premium alerts
+                    </span>
+                    <span className="inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-[9px] px-2 py-0.5 rounded-full border border-emerald-500/15">
+                      <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                      Active Engine
+                    </span>
+                  </div>
+                  
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                    Monitoring {getUpcomingAlerts().length} asset(s) maturing or premium due within 90 days.
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={handleTriggerSimulatedEmail}
+                    className="w-full mt-1 py-2 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/25 dark:hover:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 font-extrabold rounded-xl text-[10px] transition-all flex items-center justify-center gap-1 border border-indigo-100/40 dark:border-indigo-900/30 cursor-pointer shadow-sm"
+                  >
+                    <Mail className="h-3 w-3" />
+                    <span>Send Simulated Email Alert Now</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -1257,27 +1603,44 @@ export const AccountTabView: React.FC<AccountTabViewProps> = ({
             </form>
           </div>
 
-          {/* Quick Statistics Overview */}
+          {/* Real-time Security Overview */}
           <div className="rounded-3xl glass-panel border border-white/30 dark:border-white/10 p-6 shadow-xl bg-gradient-to-tr from-slate-500/5 to-indigo-500/5 transform-gpu overflow-hidden">
-            <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest block mb-4">
-              Security Overview
-            </h4>
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest block">
+                Security Overview
+              </h4>
+              <span className="inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-[9px] px-2 py-0.5 rounded-full border border-emerald-500/15">
+                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                Live Monitoring
+              </span>
+            </div>
 
-            <div className="space-y-3.5 text-xs">
+            <div className="space-y-3 text-xs">
               <div className="flex items-center justify-between font-medium">
-                <span className="text-slate-600 dark:text-slate-350">Data Encryption</span>
+                <span className="text-slate-600 dark:text-slate-350">Data Security</span>
                 <span className="font-bold text-indigo-600 dark:text-indigo-400">AES-256 GCM</span>
               </div>
               <div className="flex items-center justify-between font-medium">
-                <span className="text-slate-600 dark:text-slate-350">Local Key Storage</span>
-                <span className="font-bold text-slate-800 dark:text-slate-200">Device Sandbox</span>
+                <span className="text-slate-600 dark:text-slate-350">2FA Protection</span>
+                <span className={`font-bold ${tfaEnabled ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-500'}`}>
+                  {tfaEnabled ? 'Enabled & Secured' : 'Disabled (Bypassed)'}
+                </span>
               </div>
               <div className="flex items-center justify-between font-medium">
-                <span className="text-slate-600 dark:text-slate-350">IP Session Lock</span>
-                <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping" />
-                  <span>Locked</span>
+                <span className="text-slate-600 dark:text-slate-350">Biometric Verification</span>
+                <span className={`font-bold ${biometricEnabled ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500'}`}>
+                  {biometricEnabled ? 'FaceID / TouchID Active' : 'Password Lock Only'}
                 </span>
+              </div>
+              <div className="flex items-center justify-between font-medium">
+                <span className="text-slate-600 dark:text-slate-350">Maturity Alerts Engine</span>
+                <span className={`font-bold ${notifEnabled ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`}>
+                  {notifEnabled ? `Active (${getUpcomingAlerts().length} items monitored)` : 'Muted'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between font-medium pt-2 border-t border-slate-200/50 dark:border-slate-800/40">
+                <span className="text-slate-600 dark:text-slate-350">Browser Key Store</span>
+                <span className="font-mono text-[10px] text-slate-800 dark:text-slate-200">{realDevice.browser} LocalSandBox</span>
               </div>
             </div>
           </div>
@@ -1415,7 +1778,7 @@ export const AccountTabView: React.FC<AccountTabViewProps> = ({
                 <h3 className="text-base font-display font-extrabold text-slate-900 dark:text-white mb-2">
                   Permanently Delete Account?
                 </h3>
-                <p className="text-xs text-rose-650 dark:text-rose-400 font-bold bg-rose-50 dark:bg-rose-950/30 p-2.5 rounded-xl mb-4 text-left leading-normal">
+                <p className="text-xs text-rose-600 dark:text-rose-400 font-bold bg-rose-50 dark:bg-rose-950/30 p-2.5 rounded-xl mb-4 text-left leading-normal">
                   🔥 DANGER ZONE: This will permanently purge your credentials, family portfolio profiles, and historical logs. This action is completely irreversible.
                 </p>
                 <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed mb-6 font-medium">
@@ -1439,6 +1802,130 @@ export const AccountTabView: React.FC<AccountTabViewProps> = ({
                   className="flex-1 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl text-xs transition-all cursor-pointer"
                 >
                   Permanently Delete
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+      {/* Simulated Email Notification Delivery Mockup */}
+      <AnimatePresence>
+        {showEmailModal && modalEmailContent && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowEmailModal(false)}
+              className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm"
+            />
+
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 15 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 15 }}
+              className="relative w-full max-w-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-2xl z-10 flex flex-col text-slate-800 dark:text-slate-100"
+            >
+              {/* Email App Header */}
+              <div className="bg-slate-900 text-white p-4 flex items-center justify-between border-b border-slate-800">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                  <span className="text-[10px] font-bold tracking-widest uppercase text-slate-400">
+                    Incoming Simulated Email Alert
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowEmailModal(false)}
+                  className="text-slate-400 hover:text-white font-bold text-xs"
+                >
+                  ✕ Close
+                </button>
+              </div>
+
+              {/* Email Metadata Headers */}
+              <div className="p-4 bg-white dark:bg-slate-950 border-b border-slate-200/60 dark:border-slate-850 space-y-1.5 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                <div>
+                  <strong className="text-slate-700 dark:text-slate-200">From:</strong> Security Alert Daemon &lt;alerts@assettracker.local&gt;
+                </div>
+                <div>
+                  <strong className="text-slate-700 dark:text-slate-200">To:</strong> {modalEmailContent.to}
+                </div>
+                <div>
+                  <strong className="text-slate-700 dark:text-slate-200">Date:</strong> {modalEmailContent.date}
+                </div>
+                <div>
+                  <strong className="text-slate-700 dark:text-slate-200">Subject:</strong> <span className="text-rose-600 dark:text-rose-400 font-bold">{modalEmailContent.subject}</span>
+                </div>
+              </div>
+
+              {/* Email Client Body */}
+              <div className="p-5 overflow-y-auto max-h-[350px] bg-white dark:bg-slate-950 text-xs text-slate-800 dark:text-slate-200 space-y-4">
+                <div className="space-y-1">
+                  <p className="font-bold text-sm">Dear Portfolio Custodian,</p>
+                  <p className="text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+                    This is an automated advisory alert concerning fixed deposits and premium covenants connected to your registered family portfolio.
+                  </p>
+                </div>
+
+                {modalEmailContent.alerts.length === 0 ? (
+                  <div className="p-4 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-950/40 text-emerald-700 dark:text-emerald-400 rounded-2xl text-center space-y-1">
+                    <p className="font-bold">✓ Safe Status: No immediate alerts</p>
+                    <p className="text-[10px] text-slate-500">There are no fixed deposits maturing or premiums due within the next 90 days.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    <p className="font-bold text-slate-750 dark:text-slate-350 uppercase tracking-wider text-[10px]">
+                      Upcoming Milestones & Premium Deliveries:
+                    </p>
+                    <div className="space-y-2">
+                      {modalEmailContent.alerts.map((alert: any, idx: number) => {
+                        const amountStr = alert.currency === 'INR' 
+                          ? `₹${Number(alert.amount).toLocaleString('en-IN')}`
+                          : alert.currency === 'USD' ? `$${Number(alert.amount).toLocaleString('en-US')}`
+                          : `${alert.currency} ${Number(alert.amount).toLocaleString()}`;
+                        return (
+                          <div 
+                            key={idx} 
+                            className={`p-3 rounded-2xl border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 ${
+                              alert.daysLeft <= 15
+                                ? 'bg-rose-500/5 border-rose-500/20 text-rose-800 dark:text-rose-300'
+                                : 'bg-amber-500/5 border-amber-500/20 text-amber-800 dark:text-amber-300'
+                            }`}
+                          >
+                            <div className="space-y-0.5">
+                              <span className="font-extrabold text-xs block">{alert.name}</span>
+                              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold flex items-center gap-1.5">
+                                Due/Matures: {new Date(alert.date).toLocaleDateString()} 
+                                <span className="font-bold">({alert.daysLeft} days left)</span>
+                              </span>
+                            </div>
+                            <div className="text-right sm:text-right shrink-0">
+                              <span className="font-mono font-bold text-xs block">{amountStr}</span>
+                              <span className="text-[9px] uppercase tracking-wider font-extrabold bg-slate-200/50 dark:bg-slate-800 px-1.5 py-0.5 rounded-md text-slate-700 dark:text-slate-300 inline-block">
+                                {alert.type}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                <div className="pt-4 border-t border-slate-200/50 dark:border-slate-800/40 text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+                  <p>Securely transmitted from your sandbox local deployment environment. No actual emails leave your container workspace.</p>
+                </div>
+              </div>
+
+              {/* Email Footer Drawer */}
+              <div className="p-4 bg-slate-100 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowEmailModal(false)}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
+                >
+                  Dismiss Notification
                 </button>
               </div>
             </motion.div>

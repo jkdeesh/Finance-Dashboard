@@ -257,34 +257,31 @@ export const PreciousReservesView: React.FC<PreciousReservesViewProps> = ({
   };
 
   return (
-    <div className="flex flex-col gap-6 h-full relative z-10 w-full">
+    <div className="space-y-6" id="precious-reserves-view-root">
       
-      {/* Header Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <button 
+      {/* Header Info Block */}
+      <div className="glass-card flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-6">
+        <div className="space-y-3">
+          <button
             onClick={onBackToDashboard}
-            className="flex items-center gap-2 text-xs font-bold text-indigo-950 dark:text-indigo-200 hover:text-indigo-650 dark:hover:text-white transition-colors cursor-pointer mb-2 bg-white/20 dark:bg-slate-800/30 px-3 py-1.5 rounded-xl border border-white/20 w-fit"
+            className="group flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all cursor-pointer bg-slate-100/55 dark:bg-slate-800/55 hover:bg-slate-200/55 dark:hover:bg-slate-700/55 px-3 py-1.5 rounded-xl border border-slate-200/40 dark:border-white/10 shadow-sm"
           >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            <span>Back to Dashboard</span>
+            <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5 text-indigo-700" /> Back to Dashboard
           </button>
-          <h1 className="text-2xl md:text-3xl font-display font-extrabold text-indigo-950 dark:text-white tracking-tight flex items-center gap-2.5">
-            <Coins className="h-7 w-7 text-amber-500 animate-pulse shrink-0" />
-            <span>Vault Reserves & Precious Metals</span>
-          </h1>
-          <p className="text-xs text-slate-600 dark:text-slate-300 font-medium max-w-xl leading-relaxed">
-            Manage your gold holdings (grams/sovereigns), sterling silver collections, certified diamonds, and exquisite family jewelry. Real-time prices track daily global gold and silver market rate updates.
-          </p>
+          <div>
+            <h1 className="text-3xl font-display font-extrabold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
+              <Coins className="h-7 w-7 text-amber-500 shrink-0" /> Vault Reserves & Precious Metals
+            </h1>
+            <div className="text-slate-700 dark:text-slate-300 text-xs md:text-sm font-medium mt-1.5 block max-w-xl">
+              Manage physical gold, sterling silver, certified diamonds, and family jewelry with live dynamic valuations.
+            </div>
+          </div>
         </div>
-
         <button
-          type="button"
           onClick={handleOpenNewForm}
-          className="flex items-center justify-center gap-2 px-5 py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 hover:scale-[1.02] active:scale-[0.98] font-extrabold rounded-2xl text-xs transition-all shadow-md cursor-pointer self-start md:self-center shrink-0 border border-amber-300/30"
+          className="flex items-center gap-1.5 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-xl text-xs font-semibold shadow-md transition-all cursor-pointer shrink-0"
         >
-          <Plus className="h-4 w-4 stroke-[3]" />
-          <span>Deposit Ornament or Bar/Coin</span>
+          <Plus className="h-4 w-4" /> Deposit Asset
         </button>
       </div>
 
@@ -331,57 +328,57 @@ export const PreciousReservesView: React.FC<PreciousReservesViewProps> = ({
 
       {/* Summary Stats Panels */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <GlassCard className="p-4 flex flex-col justify-between">
-          <div>
-            <span className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider block">Total Vault Valuation</span>
-            <span className="text-xl md:text-2xl font-display font-black text-amber-500 dark:text-amber-400 mt-1 block">
+        <GlassCard className="p-4 flex flex-col justify-between min-w-0 w-full">
+          <div className="min-w-0">
+            <span className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider block" title="Total Vault Valuation">Total Vault Valuation</span>
+            <span className="text-xl md:text-2xl font-display font-black text-amber-500 dark:text-amber-400 mt-1 block whitespace-nowrap">
               {formatCurrency(totalValuation)}
             </span>
           </div>
-          <span className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold mt-3 block border-t border-slate-200/10 pt-1.5">
+          <span className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold mt-3 block border-t border-slate-200/10 pt-1.5 whitespace-nowrap">
             Sum of all physical items
           </span>
         </GlassCard>
 
-        <GlassCard className="p-4 flex flex-col justify-between">
-          <div>
-            <span className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider block">Gold Portfolio</span>
-            <span className="text-xl font-display font-bold text-yellow-600 dark:text-yellow-400 mt-1 block">
+        <GlassCard className="p-4 flex flex-col justify-between min-w-0 w-full">
+          <div className="min-w-0">
+            <span className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider block" title="Gold Portfolio">Gold Portfolio</span>
+            <span className="text-xl font-display font-bold text-yellow-600 dark:text-yellow-400 mt-1 block whitespace-nowrap">
               {formatCurrency(goldValuation)}
             </span>
           </div>
-          <span className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold mt-3 block border-t border-slate-200/10 pt-1.5">
+          <span className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold mt-3 block border-t border-slate-200/10 pt-1.5 whitespace-nowrap">
             {calculatedAssets.filter(a => a.type === 'Gold').length} items • {calculatedAssets.filter(a => a.type === 'Gold').reduce((sum, a) => sum + convertToGrams(a.weight, a.unit), 0).toFixed(1)}g total
           </span>
         </GlassCard>
 
-        <GlassCard className="p-4 flex flex-col justify-between">
-          <div>
-            <span className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider block">Silver Portfolio</span>
-            <span className="text-xl font-display font-bold text-slate-600 dark:text-slate-300 mt-1 block">
+        <GlassCard className="p-4 flex flex-col justify-between min-w-0 w-full">
+          <div className="min-w-0">
+            <span className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider block" title="Silver Portfolio">Silver Portfolio</span>
+            <span className="text-xl font-display font-bold text-slate-600 dark:text-slate-300 mt-1 block whitespace-nowrap">
               {formatCurrency(silverValuation)}
             </span>
           </div>
-          <span className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold mt-3 block border-t border-slate-200/10 pt-1.5">
+          <span className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold mt-3 block border-t border-slate-200/10 pt-1.5 whitespace-nowrap">
             {calculatedAssets.filter(a => a.type === 'Silver').length} items • {calculatedAssets.filter(a => a.type === 'Silver').reduce((sum, a) => sum + convertToGrams(a.weight, a.unit), 0).toFixed(1)}g total
           </span>
         </GlassCard>
 
-        <GlassCard className="p-4 flex flex-col justify-between">
-          <div>
-            <span className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider block">Gems & Platinum</span>
-            <span className="text-xl font-display font-bold text-sky-600 dark:text-sky-300 mt-1 block">
+        <GlassCard className="p-4 flex flex-col justify-between min-w-0 w-full">
+          <div className="min-w-0">
+            <span className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider block" title="Gems & Platinum">Gems & Platinum</span>
+            <span className="text-xl font-display font-bold text-sky-600 dark:text-sky-300 mt-1 block whitespace-nowrap">
               {formatCurrency(gemValuation)}
             </span>
           </div>
-          <span className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold mt-3 block border-t border-slate-200/10 pt-1.5">
+          <span className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold mt-3 block border-t border-slate-200/10 pt-1.5 whitespace-nowrap">
             Diamonds, Platinum, and custom items
           </span>
         </GlassCard>
       </div>
 
       {/* Core Lists / Management */}
-      <div className="flex-1 min-h-0 flex flex-col gap-4">
+      <div className="space-y-4">
         {/* Filter bar */}
         <div className="flex flex-col md:flex-row gap-3 items-center justify-between">
           {/* Search */}
@@ -405,7 +402,7 @@ export const PreciousReservesView: React.FC<PreciousReservesViewProps> = ({
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                   filterType === t 
                     ? 'bg-amber-500 text-slate-950 shadow-sm' 
-                    : 'text-slate-650 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/10'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/10'
                 }`}
               >
                 {t}
@@ -424,7 +421,7 @@ export const PreciousReservesView: React.FC<PreciousReservesViewProps> = ({
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto pr-1 pb-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-10">
             {filteredAssets.map(asset => {
               const displayWeight = asset.type === 'Other' ? '' : `${asset.weight} ${asset.unit}`;
               const hasPurity = asset.karat || asset.purity;
@@ -563,7 +560,7 @@ export const PreciousReservesView: React.FC<PreciousReservesViewProps> = ({
                 </div>
                 <button 
                   onClick={resetForm}
-                  className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-650 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                  className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -572,7 +569,7 @@ export const PreciousReservesView: React.FC<PreciousReservesViewProps> = ({
               {/* Form body */}
               <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5">
                 {formError && (
-                  <div className="p-3 bg-rose-50 dark:bg-rose-950/20 text-rose-650 dark:text-rose-450 border border-rose-100 dark:border-rose-900/30 rounded-xl text-xs font-semibold flex items-center gap-2 animate-shake">
+                  <div className="p-3 bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/30 rounded-xl text-xs font-semibold flex items-center gap-2 animate-shake">
                     <ShieldAlert className="h-4 w-4 shrink-0" />
                     <span>{formError}</span>
                   </div>
@@ -846,8 +843,8 @@ export const PreciousReservesView: React.FC<PreciousReservesViewProps> = ({
                             onClick={() => toggleOwner(userId)}
                             className={`px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                               ownerIds.includes(userId)
-                                ? 'bg-indigo-550 border-indigo-500 text-white shadow-sm'
-                                : 'bg-slate-55/60 dark:bg-slate-800/40 border-slate-200/50 dark:border-slate-800/80 text-slate-650 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm'
+                                : 'bg-white/40 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800/80 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                             }`}
                           >
                             <span className="w-1.5 h-1.5 rounded-full bg-current" />
